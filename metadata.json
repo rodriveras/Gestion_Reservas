@@ -1,0 +1,6 @@
+{
+  "name": "Entre Nieves Lodge",
+  "description": "Sistema de gestión de cabañas, reservas y administración para el complejo Entre Nieves.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

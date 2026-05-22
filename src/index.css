@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&family=Hanken+Grotesk:wght@100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-headline: "Newsreader", Georgia, serif;
+  --font-sans: "Montserrat", sans-serif;
+  --font-body: "Hanken Grotesk", sans-serif;
+  
+  --color-surface-custom: #121412;
+  --color-primary-custom: #b2ceb4;
+  --color-secondary-custom: #f6bb89;
+  --color-tertiary-custom: #f9ba82;
+  --color-accent-wood: #D29B6C;
+  --color-accent-walnut: #8B5A2B;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: #0f110f;
+  color: #e2e3df;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #121412;
+}
+::-webkit-scrollbar-thumb {
+  background: #434842;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8d928b;
+}
+
