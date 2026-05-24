@@ -68,6 +68,8 @@ export default function App() {
 
   // Navigation Screen Name
   const [currentScreen, setCurrentScreen] = useState<string>("admin");
+  const [preselectedCabinId, setPreselectedCabinId] = useState<string>("");
+  const [preselectedCheckIn, setPreselectedCheckIn] = useState<string>("");
 
   // Synchronizers (Local Backup)
   useEffect(() => {
@@ -286,6 +288,11 @@ export default function App() {
             reservas={reservas}
             clientes={clientes}
             onBack={() => setCurrentScreen("admin")}
+            onNavigate={(screen, cabinId, checkIn) => {
+              if (cabinId) setPreselectedCabinId(cabinId);
+              if (checkIn) setPreselectedCheckIn(checkIn);
+              setCurrentScreen(screen);
+            }}
           />
         )}
 
@@ -325,7 +332,13 @@ export default function App() {
             cabanas={cabanas}
             clientes={clientes}
             onSave={handleAddBooking}
-            onBack={() => setCurrentScreen("admin")}
+            onBack={() => {
+              setPreselectedCabinId("");
+              setPreselectedCheckIn("");
+              setCurrentScreen("admin");
+            }}
+            initialCabanaId={preselectedCabinId}
+            initialCheckIn={preselectedCheckIn}
           />
         )}
 

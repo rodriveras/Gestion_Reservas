@@ -56,8 +56,8 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
         </h2>
       </section>
 
-      {/* Grid of Cabin slider-containers */}
-      <section className="space-y-8">
+      {/* Grid of Cabin slider-containers (Sideways scroll on mobile, vertical list on desktop) */}
+      <section className="flex flex-row overflow-x-auto lg:flex-col lg:space-y-8 gap-6 lg:gap-0 pb-6 lg:pb-0 scroll-smooth snap-x snap-mandatory scrollbar-thin scrollbar-thumb-neutral-850">
         {cabanas.map((cab) => {
           const isAvailable = cab.estado === "Disponible";
           const currentMonth = activeMonths[cab.id] || "Noviembre";
@@ -65,11 +65,11 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
           return (
             <div
               key={cab.id}
-              className="bg-[#1a1c1a] rounded-xl overflow-hidden border border-neutral-800/40 border-t-2 border-[#D29B6C] shadow-2xl transition-all hover:border-[#b2ceb4]/20"
+              className="snap-center shrink-0 w-[86vw] sm:w-[480px] lg:w-full bg-[#1a1c1a] rounded-xl overflow-hidden border border-neutral-800/40 border-t-2 border-[#D29B6C] shadow-2xl transition-all hover:border-[#b2ceb4]/20"
             >
               <div className="grid grid-cols-1 lg:grid-cols-12">
                 {/* 1. Cabin Image Left Block */}
-                <div className="lg:col-span-5 relative h-64 lg:h-full min-h-[260px] overflow-hidden">
+                <div className="lg:col-span-4 relative h-64 lg:h-full min-h-[200px] overflow-hidden">
                   <img
                     src={cab.imagenUrl}
                     alt={cab.nombre}
@@ -89,7 +89,7 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
                 </div>
 
                 {/* 2. Cabin details and calendar card right block */}
-                <div className="lg:col-span-7 p-6 md:p-8 space-y-6">
+                <div className="lg:col-span-8 p-6 md:p-8 space-y-6">
                   <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                     <div className="flex-1">
                       <h4 className="text-2xl font-headline font-semibold text-neutral-100">

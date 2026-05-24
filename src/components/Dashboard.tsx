@@ -3,6 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+import { useState } from "react";
 import { motion } from "motion/react";
 import { DollarSign, Percent, Moon, CalendarDays, ArrowLeft, PieChart, BarChart3, TrendingUp } from "lucide-react";
 import { Cabana, Reserva, ContratacionServicio, Cliente } from "../types";
@@ -97,24 +98,65 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
     };
   });
 
-  // 4. Monthly projection charts
-  // Real world calculation to distribute booking values between May, Jun, Jul, Aug, Sep
-  const monthlyIncomes = {
-    MAY: 420000,
-    JUN: 810000,
-    JUL: 905000,
-    AGO: 330000,
-  };
+  // State to filter monthly incomes by selected year
+  const [selectedYear, setSelectedYear] = useState<number>(2026);
 
-  // Adjust values slightly based on interactive booking actions
+  const monthNames = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+  const monthlyValues: { [key: number]: number } = {};
+
+  // Distribute booking values dynamically, filtering by the selected year
   reservas.forEach((r) => {
-    const month = new Date(r.checkIn).getMonth();
-    // 4 is May, 5 is Jun, 6 is Jul, 7 is Aug
-    if (month === 4) monthlyIncomes.MAY += r.montoTotal * 800; // scaling to match screenshots scale
-    if (month === 5) monthlyIncomes.JUN += r.montoTotal * 800;
-    if (month === 6) monthlyIncomes.JUL += r.montoTotal * 1000;
-    if (month === 7) monthlyIncomes.AGO += r.montoTotal * 800;
+    const date = new Date(r.checkIn);
+    if (!isNaN(date.getTime()) && date.getFullYear() === selectedYear) {
+      const m = date.getMonth();
+      monthlyValues[m] = (monthlyValues[m] || 0) + r.montoTotal * 1000;
+    }
   });
+
+  contrataciones.forEach((c) => {
+    const dateStr = (c as any).fecha || (c as any).fechaContratacion;
+    if (dateStr) {
+      const date = new Date(dateStr);
+      if (!isNaN(date.getTime()) && date.getFullYear() === selectedYear) {
+        const m = date.getMonth();
+        monthlyValues[m] = (monthlyValues[m] || 0) + c.subtotal * 1000;
+      }
+    }
+  });
+
+  // Extract only the months that have actual sales (> 0)
+  const activeMonths = Object.keys(monthlyValues)
+    .map((mStr) => {
+      const m = parseInt(mStr, 10);
+      return {
+        monthIndex: m,
+        name: monthNames[m],
+        value: monthlyValues[m],
+      };
+    })
+    .sort((a, b) => a.monthIndex - b.monthIndex);
+
+  const maxIncome = Math.max(...activeMonths.map((d) => d.value)) || 1;
+
+  const getBarGradient = (month: string) => {
+    // ENE, FEB, DIC (Verano)
+    if (["ENE", "FEB", "DIC"].includes(month)) {
+      return "from-amber-600 to-rose-400 shadow-[0_-4px_12px_rgba(244,63,94,0.15)]";
+    }
+    // MAR, ABR, MAY (Otoño)
+    if (["MAR", "ABR", "MAY"].includes(month)) {
+      return "from-[#D29B6C] to-[#f6bb89] shadow-[0_-4px_12px_rgba(246,187,137,0.15)]";
+    }
+    // JUN, JUL, AGO (Invierno)
+    if (month === "JUL") {
+      return "from-emerald-600 to-[#b2ceb4] shadow-[0_-4px_16px_rgba(16,185,129,0.3)]";
+    }
+    if (["JUN", "AGO"].includes(month)) {
+      return "from-cyan-600 to-indigo-400 shadow-[0_-4px_12px_rgba(99,102,241,0.15)]";
+    }
+    // SEP, OCT, NOV (Primavera)
+    return "from-violet-600 to-fuchsia-400 shadow-[0_-4px_12px_rgba(236,72,153,0.15)]";
+  };
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(val);
@@ -216,7 +258,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
           </div>
           <div className="flex flex-col items-center justify-center py-4">
             <div className="relative w-56 h-56 flex items-center justify-center">
-              <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
+              <svg className="w-full h-full" viewBox="0 0 100 100">
                 {/* Background ring */}
                 <circle
                   className="text-neutral-850"
@@ -225,8 +267,9 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                   fill="transparent"
                   r="40"
                   stroke="#262626"
-                  strokeWidth="10"
+                  strokeWidth="18"
                 ></circle>
+                
                 {/* Render colored arcs */}
                 {cabinDonutSegments.map((seg, i) => {
                   const dashArray = 2 * Math.PI * 40; // 251.3
@@ -239,38 +282,74 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                       fill="transparent"
                       r="40"
                       stroke={seg.color}
-                      strokeWidth="10"
+                      strokeWidth="18"
                       strokeDasharray={251.3}
                       strokeDashoffset={strokeOffset}
-                      className="transition-all duration-500 ease-out"
-                      transform={`rotate(${seg.startAngle} 50 50)`}
+                      className="transition-all duration-500 ease-out hover:brightness-110 cursor-pointer"
+                      transform={`rotate(${seg.startAngle - 90} 50 50)`}
                     />
                   );
                 })}
+
+                {/* Render labels on top of the segments inside the wide ring */}
+                {cabinDonutSegments.map((seg) => {
+                  if (seg.percentage <= 4) return null; // Skip tiny slices to prevent overlap
+                  const midAngle = seg.startAngle + seg.angle / 2 - 90;
+                  const angleRad = (midAngle * Math.PI) / 180;
+                  // Center of the ring is at radius 40
+                  const labelX = 50 + 40 * Math.cos(angleRad);
+                  const labelY = 50 + 40 * Math.sin(angleRad);
+
+                  const cabinLabel = seg.nombre.replace("Cabaña ", "").toUpperCase();
+
+                  return (
+                    <g key={`label-${seg.nombre}`} className="select-none pointer-events-none">
+                      {/* Cabin Name with high-contrast outline halo */}
+                      <text
+                        x={labelX}
+                        y={labelY - 1.8}
+                        fill="#ffffff"
+                        fontSize="3.2"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        className="font-sans font-bold fill-white"
+                        stroke="#000000"
+                        strokeWidth="1.0"
+                        strokeLinejoin="round"
+                        paintOrder="stroke"
+                      >
+                        {cabinLabel}
+                      </text>
+                      {/* Percentage with high-contrast outline halo */}
+                      <text
+                        x={labelX}
+                        y={labelY + 2.4}
+                        fill={seg.color}
+                        fontSize="4.2"
+                        fontWeight="black"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        className="font-sans font-black"
+                        stroke="#000000"
+                        strokeWidth="1.4"
+                        strokeLinejoin="round"
+                        paintOrder="stroke"
+                      >
+                        {seg.percentage}%
+                      </text>
+                    </g>
+                  );
+                })}
               </svg>
-              <div className="absolute text-center flex flex-col items-center justify-center">
+              <div className="absolute text-center flex flex-col items-center justify-center pointer-events-none">
                 <span className="block font-headline text-3xl font-bold text-white">
                   {reservasTotalesCount}
                 </span>
-                <span className="block font-sans text-[10px] text-neutral-400 uppercase tracking-widest">
+                <span className="block font-sans text-[10px] text-[#b2ceb4] uppercase tracking-widest font-semibold">
                   Estadías
                 </span>
               </div>
-            </div>
-
-            {/* Legends */}
-            <div className="grid grid-cols-2 gap-4 w-full mt-6">
-              {cabinDonutSegments.map((seg) => (
-                <div key={seg.nombre} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: seg.color }}></div>
-                  <div className="flex flex-col text-[11px]">
-                    <span className="font-semibold text-neutral-200 truncate max-w-[120px]">{seg.nombre}</span>
-                    <span className="text-neutral-500 font-sans">
-                      {seg.percentage}% ({seg.count})
-                    </span>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
@@ -285,14 +364,15 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
           </div>
           <div className="flex flex-col items-center justify-center py-4">
             <div className="relative w-56 h-56 flex items-center justify-center">
-              <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 100 100">
+              <svg className="w-full h-full" viewBox="0 0 100 100">
+                {/* Background ring */}
                 <circle
                   cx="50"
                   cy="50"
                   fill="transparent"
                   r="40"
                   stroke="#262626"
-                  strokeWidth="10"
+                  strokeWidth="18"
                 ></circle>
                 {channelDonutSegments.map((seg, i) => {
                   const dashArray = 2 * Math.PI * 40;
@@ -305,36 +385,72 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                       fill="transparent"
                       r="40"
                       stroke={seg.color}
-                      strokeWidth="10"
+                      strokeWidth="18"
                       strokeDasharray={251.3}
                       strokeDashoffset={strokeOffset}
-                      className="transition-all duration-500 ease-out"
-                      transform={`rotate(${seg.startAngle} 50 50)`}
+                      className="transition-all duration-500 ease-out hover:brightness-110 cursor-pointer"
+                      transform={`rotate(${seg.startAngle - 90} 50 50)`}
                     />
                   );
                 })}
+
+                {/* Render labels on top of the segments inside the wide ring */}
+                {channelDonutSegments.map((seg) => {
+                  if (seg.percentage <= 4) return null; // Skip tiny slices to prevent overlap
+                  const midAngle = seg.startAngle + seg.angle / 2 - 90;
+                  const angleRad = (midAngle * Math.PI) / 180;
+                  // Center of the ring is at radius 40
+                  const labelX = 50 + 40 * Math.cos(angleRad);
+                  const labelY = 50 + 40 * Math.sin(angleRad);
+
+                  const channelLabel = seg.name.toUpperCase();
+
+                  return (
+                    <g key={`label-${seg.name}`} className="select-none pointer-events-none">
+                      {/* Channel Name with high-contrast outline halo */}
+                      <text
+                        x={labelX}
+                        y={labelY - 1.8}
+                        fill="#ffffff"
+                        fontSize="3.2"
+                        fontWeight="bold"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        className="font-sans font-bold fill-white"
+                        stroke="#000000"
+                        strokeWidth="1.0"
+                        strokeLinejoin="round"
+                        paintOrder="stroke"
+                      >
+                        {channelLabel}
+                      </text>
+                      {/* Percentage with high-contrast outline halo */}
+                      <text
+                        x={labelX}
+                        y={labelY + 2.4}
+                        fill={seg.color}
+                        fontSize="4.2"
+                        fontWeight="black"
+                        textAnchor="middle"
+                        dominantBaseline="central"
+                        className="font-sans font-black"
+                        stroke="#000000"
+                        strokeWidth="1.4"
+                        strokeLinejoin="round"
+                        paintOrder="stroke"
+                      >
+                        {seg.percentage}%
+                      </text>
+                    </g>
+                  );
+                })}
               </svg>
-              <div className="absolute text-center flex flex-col items-center justify-center">
+              <div className="absolute text-center flex flex-col items-center justify-center pointer-events-none">
                 <span className="block font-headline text-3xl font-bold text-white">100%</span>
-                <span className="block font-sans text-[10px] text-neutral-400 uppercase tracking-widest">
+                <span className="block font-sans text-[10px] text-[#b2ceb4] uppercase tracking-widest font-semibold">
                   Reservas
                 </span>
               </div>
-            </div>
-
-            {/* Legends */}
-            <div className="grid grid-cols-2 gap-4 w-full mt-6">
-              {channelDonutSegments.map((seg) => (
-                <div key={seg.name} className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: seg.color }}></div>
-                  <div className="flex flex-col text-[11px]">
-                    <span className="font-semibold text-neutral-200">{seg.name}</span>
-                    <span className="text-neutral-500 font-sans">
-                      {seg.percentage}% ({seg.count})
-                    </span>
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
         </div>
@@ -342,75 +458,69 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
 
       {/* Monthly Bar Projection Chart */}
       <section className="bg-[#1b1e1b] rounded-xl border border-neutral-800/20 border-t-2 border-[#D29B6C] p-6 shadow-xl space-y-8">
-        <div className="flex justify-between items-center pb-2 border-b border-neutral-900">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-neutral-900">
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-cyan-400" />
             <h3 className="text-lg font-headline font-semibold text-neutral-200">
               Ingresos Proyectados por Mes (CLP)
             </h3>
           </div>
-          <span className="px-2.5 py-1 bg-cyan-950/40 text-cyan-400 border border-cyan-900 rounded-full font-sans text-xs font-bold">
-            Año 2024
-          </span>
+          <div className="flex bg-[#121412] p-1 rounded-lg border border-neutral-800/60 self-start sm:self-auto">
+            {[2024, 2025, 2026].map((yr) => (
+              <button
+                key={yr}
+                onClick={() => setSelectedYear(yr)}
+                className={`px-3 py-1 text-xs font-sans font-bold rounded-md transition-all duration-200 cursor-pointer ${
+                  selectedYear === yr
+                    ? "bg-[#4a634e] text-white shadow-md"
+                    : "text-neutral-400 hover:text-white hover:bg-neutral-900/50"
+                }`}
+              >
+                {yr}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Dynamic Bars custom rendered */}
-        <div className="h-64 flex items-end justify-between gap-6 px-4 pt-8">
-          {/* MAY */}
-          <div className="flex flex-col items-center flex-1 gap-3 h-full justify-end group">
-            <div className="w-full rounded-t-lg transition-all duration-300 relative bg-gradient-to-t from-cyan-600 to-sky-400 shadow-[0_-4px_12px_rgba(34,211,238,0.25)] hover:brightness-110 cursor-pointer" style={{ height: "45%" }}>
-              <div className="absolute -top-7 left-1/2 -translate-x-1/2 w-max">
-                <span className="font-sans text-xs font-bold text-neutral-200">
-                  {formatCurrency(monthlyIncomes.MAY).replace("$", "").trim()}
-                </span>
-              </div>
+        <div className="pb-2">
+          {activeMonths.length === 0 ? (
+            <div className="h-64 flex flex-col items-center justify-center border border-dashed border-neutral-800 rounded-xl bg-neutral-900/10 p-6 text-center">
+              <span className="text-[#b2ceb4] font-sans font-bold text-sm mb-1">
+                Sin Movimientos Comerciales
+              </span>
+              <p className="text-xs text-neutral-500 max-w-sm">
+                No se registran estadías ni consumos facturados en el año {selectedYear}.
+              </p>
             </div>
-            <span className="font-sans text-[10px] text-neutral-400 font-bold tracking-widest uppercase">
-              MAYO
-            </span>
-          </div>
-
-          {/* JUN */}
-          <div className="flex flex-col items-center flex-1 gap-3 h-full justify-end group">
-            <div className="w-full rounded-t-lg transition-all duration-300 relative bg-gradient-to-t from-violet-700 to-indigo-400 shadow-[0_-4px_12px_rgba(139,92,246,0.3)] hover:brightness-110 cursor-pointer" style={{ height: "80%" }}>
-              <div className="absolute -top-7 left-1/2 -translate-x-1/2 w-max">
-                <span className="font-sans text-xs font-bold text-neutral-200">
-                  {formatCurrency(monthlyIncomes.JUN).replace("$", "").trim()}
-                </span>
-              </div>
+          ) : (
+            <div className="h-64 flex items-end justify-center gap-4 sm:gap-6 px-4 pt-8">
+              {activeMonths.map((d) => {
+                const heightPercent = `${(d.value / maxIncome) * 75 + 10}%`; // dynamic scale, min 10%, max 85%
+                const isJuly = d.name === "JUL";
+                const gradientClass = getBarGradient(d.name);
+                
+                return (
+                  <div key={d.name} className="flex flex-col items-center flex-1 max-w-[80px] gap-3 h-full justify-end group">
+                    <div 
+                      className={`w-full rounded-t-lg transition-all duration-500 relative bg-gradient-to-t ${gradientClass} hover:brightness-110 cursor-pointer`}
+                      style={{ height: heightPercent }}
+                    >
+                      {/* Value label on top of the bar */}
+                      <div className="absolute -top-7 left-1/2 -translate-x-1/2 w-max transition-transform group-hover:scale-105">
+                        <span className={`font-sans text-[10px] font-bold ${isJuly ? "text-[#b2ceb4]" : "text-neutral-300"}`}>
+                          {formatCurrency(d.value).replace("$", "").trim()}
+                        </span>
+                      </div>
+                    </div>
+                    <span className={`font-sans text-[10px] font-bold tracking-wider uppercase ${isJuly ? "text-[#b2ceb4] pb-0.5 border-b-2 border-[#b2ceb4]" : "text-[#b2ceb4]"}`}>
+                      {d.name}
+                    </span>
+                  </div>
+                );
+              })}
             </div>
-            <span className="font-sans text-[10px] text-neutral-400 font-bold tracking-widest uppercase">
-              JUNIO
-            </span>
-          </div>
-
-          {/* JUL */}
-          <div className="flex flex-col items-center flex-1 gap-3 h-full justify-end group">
-            <div className="w-full rounded-t-lg transition-all duration-300 relative bg-gradient-to-t from-emerald-600 to-emerald-400 shadow-[0_-4px_16px_rgba(16,185,129,0.35)] hover:brightness-110 cursor-pointer border-b-2 border-emerald-300" style={{ height: "95%" }}>
-              <div className="absolute -top-7 left-1/2 -translate-x-1/2 w-max">
-                <span className="font-sans text-xs font-bold text-[#b2ceb4]">
-                  {formatCurrency(monthlyIncomes.JUL).replace("$", "").trim()}
-                </span>
-              </div>
-            </div>
-            <span className="font-sans text-[10px] text-[#b2ceb4] font-bold tracking-widest uppercase pb-0.5 border-b-2 border-[#b2ceb4]">
-              JULIO
-            </span>
-          </div>
-
-          {/* AGO */}
-          <div className="flex flex-col items-center flex-1 gap-3 h-full justify-end group">
-            <div className="w-full rounded-t-lg transition-all duration-300 relative bg-gradient-to-t from-indigo-600 to-violet-400 shadow-[0_-4px_12px_rgba(99,102,241,0.25)] hover:brightness-110 cursor-pointer" style={{ height: "35%" }}>
-              <div className="absolute -top-7 left-1/2 -translate-x-1/2 w-max">
-                <span className="font-sans text-xs font-bold text-neutral-200">
-                  {formatCurrency(monthlyIncomes.AGO).replace("$", "").trim()}
-                </span>
-              </div>
-            </div>
-            <span className="font-sans text-[10px] text-neutral-400 font-bold tracking-widest uppercase">
-              AGOSTO
-            </span>
-          </div>
+          )}
         </div>
       </section>
     </motion.div>

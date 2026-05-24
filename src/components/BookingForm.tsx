@@ -13,14 +13,33 @@ interface BookingFormProps {
   clientes: Cliente[];
   onSave: (booking: Reserva) => void;
   onBack: () => void;
+  initialCabanaId?: string;
+  initialCheckIn?: string;
 }
 
-export default function BookingForm({ cabanas, clientes, onSave, onBack }: BookingFormProps) {
+export default function BookingForm({
+  cabanas,
+  clientes,
+  onSave,
+  onBack,
+  initialCabanaId = "",
+  initialCheckIn = ""
+}: BookingFormProps) {
   const [clienteId, setClienteId] = useState("");
-  const [cabanaId, setCabanaId] = useState("");
+  const [cabanaId, setCabanaId] = useState(initialCabanaId);
   const [pasajeros, setPasajeros] = useState(2);
-  const [entrada, setEntrada] = useState("2024-06-12");
-  const [salida, setSalida] = useState("2024-06-15");
+  const [entrada, setEntrada] = useState(initialCheckIn || "2024-06-12");
+  
+  // Calculate default check-out date as 2 days after check-in date
+  const [salida, setSalida] = useState(() => {
+    if (initialCheckIn) {
+      const d = new Date(initialCheckIn);
+      d.setDate(d.getDate() + 2); // 2 nights default
+      return d.toISOString().split("T")[0];
+    }
+    return "2024-06-14";
+  });
+  
   const [canalVentas, setCanalVentas] = useState<Reserva["canalVentas"]>("Directo");
   const [montoTotal, setMontoTotal] = useState("");
   const [montoAnticipo, setMontoAnticipo] = useState("");
@@ -190,17 +209,17 @@ export default function BookingForm({ cabanas, clientes, onSave, onBack }: Booki
                     <button
                       type="button"
                       onClick={() => setPasajeros((p) => Math.max(1, p - 1))}
-                      className="px-4 text-[#b2ceb4] hover:bg-neutral-800 text-sm font-bold h-full border-r border-neutral-800"
+                      className="px-4 text-[#b2ceb4] hover:bg-neutral-800 text-2xl font-bold h-full border-r border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none"
                     >
                       -
                     </button>
-                    <span className="flex-1 text-center font-bold text-xs text-neutral-200">
+                    <span className="flex-1 text-center font-bold text-xl text-neutral-100 select-none">
                       {pasajeros}
                     </span>
                     <button
                       type="button"
                       onClick={() => setPasajeros((p) => Math.min(10, p + 1))}
-                      className="px-4 text-[#b2ceb4] hover:bg-neutral-800 text-sm font-bold h-full border-l border-neutral-800"
+                      className="px-4 text-[#b2ceb4] hover:bg-neutral-800 text-2xl font-bold h-full border-l border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none"
                     >
                       +
                     </button>

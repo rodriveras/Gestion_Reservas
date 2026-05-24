@@ -13,76 +13,139 @@ interface CalendarViewProps {
   reservas: Reserva[];
   clientes: Cliente[];
   onBack: () => void;
+  onNavigate?: (screen: string, cabinId?: string, checkIn?: string) => void;
 }
 
-export default function CalendarView({ cabanas, reservas, clientes, onBack }: CalendarViewProps) {
+export default function CalendarView({ cabanas, reservas, clientes, onBack, onNavigate }: CalendarViewProps) {
   const [selectedCabanaId, setSelectedCabanaId] = useState<string>("all");
   const [currentMonthName, setCurrentMonthName] = useState<string>("Mayo 2024");
 
+  // Defensive copies to avoid null-reference crashes
+  const safeCabanas = cabanas || [];
+  const safeReservas = reservas || [];
+  const safeClientes = clientes || [];
+
   // Get dynamic upcoming arrivals
-  const upcomingArrivals = reservas.map((r) => {
-    const client = clientes.find((c) => c.id === r.clienteId) || { nombre: "Invitado", apellido: "Anónimo" };
-    const cabana = cabanas.find((c) => c.id === r.cabanaId) || { nombre: "Cabaña Desconocida" };
-    return {
-      id: r.id,
-      guestName: `${client.nombre} ${client.apellido}`,
-      price: r.montoTotal * 1000,
-      cabinName: cabana.nombre,
-      dateText: new Date(r.checkIn).toLocaleDateString("es-ES", { day: "numeric", month: "short" }),
-      passengers: r.cantidadPersonas,
-      nights: r.noches,
-      rawCheckIn: r.checkIn,
-    };
-  }).sort((a, b) => new Date(a.rawCheckIn).getTime() - new Date(b.rawCheckIn).getTime());
+  const upcomingArrivals = safeReservas
+    .filter((r) => r && r.checkIn) // Skip empty/null bookings
+    .map((r) => {
+      const client = safeClientes.find((c) => c && c.id === r.clienteId) || { nombre: "Invitado", apellido: "Anónimo" };
+      const cabana = safeCabanas.find((c) => c && c.id === r.cabanaId) || { nombre: "Cabaña Desconocida" };
+      
+      const rawDate = new Date(r.checkIn);
+      const dateText = isNaN(rawDate.getTime()) 
+        ? "Fecha Inválida" 
+        : rawDate.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
 
-  // Dummy calendar structure for Mayo 2024 (matching Screenshot 3 layout)
-  // 1 to 31 days starting on Wednesday (so 1 to 2 days are offset)
-  const offsetDays = 2; // Mon, Tue are blank from previous month (represented by 29, 30)
-  const daysInMonth = 31;
+      return {
+        id: r.id,
+        guestName: `${client.nombre} ${client.apellido}`,
+        price: (r.montoTotal || 0) * 1000,
+        cabinName: cabana.nombre,
+        dateText,
+        passengers: r.cantidadPersonas || 0,
+        nights: r.noches || 0,
+        rawCheckIn: r.checkIn,
+      };
+    })
+    .sort((a, b) => {
+      const timeA = new Date(a.rawCheckIn).getTime();
+      const timeB = new Date(b.rawCheckIn).getTime();
+      return (isNaN(timeA) ? 0 : timeA) - (isNaN(timeB) ? 0 : timeB);
+    });
 
-  // Let's model occupancy for each day in Mayo 2024 depending on selected cabana filter
-  const isDayReserved = (dayNum: number) => {
-    // Return some mockup reserved patterns that visually match Screenshot 3, but merge actual new reservations
-    if (selectedCabanaId === "all") {
-      // General reserved days for all cabins combined
-      return [3, 4, 6, 7, 14, 22].includes(dayNum);
-    } else if (selectedCabanaId === "CAB-01") {
-      // Cabaña Roble reserved days
-      return [3, 4, 14, 22].includes(dayNum);
-    } else if (selectedCabanaId === "CAB-02") {
-      // Refugio Niebla reserved days
-      return [6, 7, 22].includes(dayNum);
-    } else {
-      // Mirador Alpino
-      return [14].includes(dayNum);
+  // Helper to determine occupancy dynamically, checking database reservations + visual seeding baseline
+  const getDayStateForCabin = (cabinId: string, dayNum: number, monthName: string) => {
+    const year = monthName.includes("2024") ? 2024 : 2026;
+    const monthIndex = monthName.includes("Abril") ? 3 : monthName.includes("Junio") ? 5 : 4; // 3=Apr, 4=May, 5=Jun
+    const currentDate = new Date(year, monthIndex, dayNum);
+
+    // 1. Check real bookings in database
+    const isBooked = safeReservas.some((r) => {
+      if (!r) return false;
+      if (cabinId !== "all" && r.cabanaId !== cabinId) return false;
+      const start = new Date(r.checkIn);
+      const end = new Date(r.checkOut);
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) return false;
+
+      // Clean check dates
+      const currentDateCloned = new Date(currentDate);
+      const currentMs = currentDateCloned.setHours(0, 0, 0, 0);
+      const startMs = new Date(start).setHours(0, 0, 0, 0);
+      const endMs = new Date(end).setHours(0, 0, 0, 0);
+
+      return currentMs >= startMs && currentMs < endMs;
+    });
+
+    if (isBooked) return "reserved";
+
+    // 2. Mockup data for visual matching in Mayo 2024
+    if (year === 2024 && monthIndex === 4) {
+      if (cabinId === "CAB-01" && [3, 4, 14, 22].includes(dayNum)) return "reserved";
+      if (cabinId === "CAB-02" && [6, 7, 22].includes(dayNum)) return "reserved";
+      if (cabinId === "CAB-03" && [14].includes(dayNum)) return "reserved";
+      if (cabinId === "CAB-03" && [11, 12].includes(dayNum)) return "maintenance";
     }
+
+    return "available";
   };
 
-  const isDayMaintenance = (dayNum: number) => {
-    if (selectedCabanaId === "all" || selectedCabanaId === "CAB-03") {
-      return [11, 12].includes(dayNum);
-    }
-    return false;
+  const getDaysInMonth = () => {
+    const year = currentMonthName.includes("2024") ? 2024 : 2026;
+    const monthIndex = currentMonthName.includes("Abril") ? 3 : currentMonthName.includes("Junio") ? 5 : 4;
+    return new Date(year, monthIndex + 1, 0).getDate();
   };
 
+  const getOffsetDays = () => {
+    const year = currentMonthName.includes("2024") ? 2024 : 2026;
+    const monthIndex = currentMonthName.includes("Abril") ? 3 : currentMonthName.includes("Junio") ? 5 : 4;
+    const firstDayIndex = new Date(year, monthIndex, 1).getDay(); // 0 = Sunday, 1 = Monday...
+    return firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+  };
+
+  const getDayName = (dayNum: number) => {
+    const year = currentMonthName.includes("2024") ? 2024 : 2026;
+    const monthIndex = currentMonthName.includes("Abril") ? 3 : currentMonthName.includes("Junio") ? 5 : 4;
+    const date = new Date(year, monthIndex, dayNum);
+    const days = ["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"];
+    return days[date.getDay()];
+  };
+
+  const daysInMonth = getDaysInMonth();
+  const offsetDays = getOffsetDays();
+
+  // Populate daysList for single calendar grid
   const daysList = [];
-  // previous month tail
-  daysList.push({ day: 29, currentMonth: false, state: "inactive" });
-  daysList.push({ day: 30, currentMonth: false, state: "inactive" });
+  const year = currentMonthName.includes("2024") ? 2024 : 2026;
+  const monthIndex = currentMonthName.includes("Abril") ? 3 : currentMonthName.includes("Junio") ? 5 : 4;
+  const prevMonthDate = new Date(year, monthIndex, 0);
+  const prevMonthDaysCount = prevMonthDate.getDate();
 
+  // Tail of previous month
+  for (let i = offsetDays - 1; i >= 0; i--) {
+    daysList.push({
+      day: prevMonthDaysCount - i,
+      currentMonth: false,
+      state: "inactive" as const,
+    });
+  }
+
+  // Days of current month
   for (let i = 1; i <= daysInMonth; i++) {
-    let state: "available" | "reserved" | "maintenance" = "available";
-    if (isDayReserved(i)) {
-      state = "reserved";
-    } else if (isDayMaintenance(i)) {
-      state = "maintenance";
-    }
+    const state = getDayStateForCabin(selectedCabanaId, i, currentMonthName);
     daysList.push({ day: i, currentMonth: true, state });
   }
 
-  // next month tail
-  daysList.push({ day: 1, currentMonth: false, state: "inactive" });
-  daysList.push({ day: 2, currentMonth: false, state: "inactive" });
+  // Tail of next month
+  const totalCells = daysList.length;
+  const nextDaysCount = 42 - totalCells;
+  for (let i = 1; i <= nextDaysCount; i++) {
+    daysList.push({
+      day: i,
+      currentMonth: false,
+      state: "inactive" as const,
+    });
+  }
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(val);
@@ -124,8 +187,8 @@ export default function CalendarView({ cabanas, reservas, clientes, onBack }: Ca
               onChange={(e) => setSelectedCabanaId(e.target.value)}
               className="w-full bg-[#1e201e] border border-neutral-800 rounded-xl px-4 py-3 text-sm text-neutral-300 font-sans appearance-none focus:ring-2 focus:ring-[#b2ceb4]/40 focus:border-[#b2ceb4] outline-none transition-all"
             >
-              <option value="all">Todas las Unidades</option>
-              {cabanas.map((c) => (
+              <option value="all">Todas las unidades</option>
+              {safeCabanas.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.nombre}
                 </option>
@@ -162,41 +225,138 @@ export default function CalendarView({ cabanas, reservas, clientes, onBack }: Ca
           </div>
 
           {/* Grid Layouts */}
-          <div className="grid grid-cols-7 gap-2 mb-4">
-            {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
-              <div key={d} className="text-center text-[10px] font-bold text-neutral-500 uppercase tracking-widest py-2">
-                {d}
-              </div>
-            ))}
-
-            {daysList.map((item, idx) => {
-              let cellBg = "bg-[#121412]/40 border-neutral-850/40 text-neutral-600";
-              let statusDot = null;
-
-              if (item.currentMonth) {
-                if (item.state === "available") {
-                  cellBg = "bg-[#4a634e]/10 border-emerald-900/10 hover:bg-[#4a634e]/20 text-[#b2ceb4] cursor-pointer";
-                  statusDot = <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#b2ceb4] rounded-full"></div>;
-                } else if (item.state === "reserved") {
-                  cellBg = "bg-rose-950/20 border-rose-900/20 hover:bg-rose-950/30 text-rose-300 cursor-pointer";
-                  statusDot = <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-rose-500 rounded-full"></div>;
-                } else if (item.state === "maintenance") {
-                  cellBg = "bg-amber-950/20 border-amber-900/20 hover:bg-amber-950/30 text-amber-300 cursor-pointer";
-                  statusDot = <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#f9ba82] rounded-full"></div>;
-                }
-              }
-
-              return (
-                <div
-                  key={`${item.day}-${idx}`}
-                  className={`h-20 border rounded-lg flex flex-col p-2 relative transition-all ${cellBg}`}
-                >
-                  <span className="text-xs font-sans font-bold">{item.day}</span>
-                  {statusDot}
+          {selectedCabanaId === "all" ? (
+            /* Multi-cabin Occupancy Grid (Gantt Timeline) */
+            <div className="overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-neutral-850">
+              <div className="min-w-[850px] space-y-4">
+                {/* Header Row: Days 1 to 31 */}
+                <div className="flex items-center gap-1 border-b border-neutral-850 pb-2">
+                  <div className="w-36 shrink-0 text-left text-[10px] font-sans font-bold text-neutral-500 uppercase tracking-widest pl-2">
+                    Unidad
+                  </div>
+                  <div className="flex-1 flex justify-between gap-1">
+                    {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((dayNum) => {
+                      const dayName = getDayName(dayNum);
+                      const isWeekend = dayName === "Sáb" || dayName === "Dom";
+                      return (
+                        <div 
+                          key={dayNum} 
+                          className={`flex-1 flex flex-col items-center justify-center p-1 rounded min-w-[24px] ${
+                            isWeekend ? "bg-neutral-900/40 text-neutral-400" : "text-neutral-500"
+                          }`}
+                        >
+                          <span className="text-[10px] font-bold font-sans">{dayNum}</span>
+                          <span className="text-[7px] uppercase tracking-tighter mt-0.5">{dayName[0]}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Cabin Rows */}
+                <div className="space-y-2">
+                  {safeCabanas.map((cab) => (
+                    <div key={cab.id} className="flex items-center gap-1 bg-[#121412]/40 rounded-xl p-2 border border-neutral-900/60 hover:border-neutral-800 transition-all">
+                      {/* Left: Cabin Name Column */}
+                      <div className="w-36 shrink-0 text-left flex flex-col justify-center pl-1">
+                        <span className="text-xs font-headline font-semibold text-neutral-200 truncate">
+                          {cab.nombre}
+                        </span>
+                        <span className="text-[9px] font-sans text-neutral-500 mt-0.5 uppercase tracking-wide">
+                          {cab.id} • ${cab.precioBase}
+                        </span>
+                      </div>
+                      
+                      {/* Right: Day Occupancy Cells */}
+                      <div className="flex-1 flex justify-between gap-1">
+                        {Array.from({ length: daysInMonth }, (_, i) => i + 1).map((dayNum) => {
+                          const state = getDayStateForCabin(cab.id, dayNum, currentMonthName);
+                          let cellColor = "bg-[#1b1e1b]/40 border-neutral-850/20 text-neutral-600";
+                          let hoverClass = "";
+
+                          if (state === "available") {
+                            cellColor = "bg-emerald-950/20 text-[#b2ceb4] border-[#4a634e]/30 hover:bg-[#4a634e]/30";
+                            hoverClass = "cursor-pointer hover:scale-[1.08]";
+                          } else if (state === "reserved") {
+                            cellColor = "bg-rose-950/25 text-rose-300 border-rose-900/30 hover:bg-rose-950/40";
+                          } else if (state === "maintenance") {
+                            cellColor = "bg-amber-950/25 text-amber-300 border-amber-900/30 hover:bg-amber-950/40";
+                          }
+
+                          const handleCellClick = () => {
+                            if (state === "available" && onNavigate) {
+                              const yearMonth = currentMonthName === "Abril 2024" ? "2024-04" : currentMonthName === "Junio 2024" ? "2024-06" : "2024-05";
+                              const checkInDate = `${yearMonth}-${dayNum.toString().padStart(2, "0")}`;
+                              onNavigate("new-booking", cab.id, checkInDate);
+                            }
+                          };
+
+                          return (
+                            <div
+                              key={dayNum}
+                              onClick={handleCellClick}
+                              className={`flex-1 min-w-[24px] h-10 border rounded-md flex items-center justify-center text-[9px] font-sans font-bold transition-all ${cellColor} ${hoverClass}`}
+                              title={`${cab.nombre} - Día ${dayNum} (${state.toUpperCase()})`}
+                            >
+                              {dayNum}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Standard Single-Cabin Calendar Grid */
+            <div className="grid grid-cols-7 gap-2 mb-4">
+              {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((d) => (
+                <div key={d} className="text-center text-[10px] font-bold text-neutral-500 uppercase tracking-widest py-2">
+                  {d}
+                </div>
+              ))}
+
+              {daysList.map((item, idx) => {
+                let cellBg = "bg-[#121412]/40 border-neutral-850/40 text-neutral-600";
+                let statusDot = null;
+
+                if (item.currentMonth) {
+                  if (item.state === "available") {
+                    cellBg = "bg-[#4a634e]/10 border-emerald-900/10 hover:bg-[#4a634e]/20 text-[#b2ceb4] cursor-pointer";
+                    statusDot = <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#b2ceb4] rounded-full"></div>;
+                  } else if (item.state === "reserved") {
+                    cellBg = "bg-rose-950/20 border-rose-900/20 hover:bg-rose-950/30 text-rose-300 cursor-pointer";
+                    statusDot = <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-rose-500 rounded-full"></div>;
+                  } else if (item.state === "maintenance") {
+                    cellBg = "bg-amber-950/20 border-amber-900/20 hover:bg-amber-950/30 text-amber-300 cursor-pointer";
+                    statusDot = <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-[#f9ba82] rounded-full"></div>;
+                  }
+                }
+
+                const handleDayClick = () => {
+                  if (item.currentMonth && selectedCabanaId !== "all" && onNavigate) {
+                    const yearMonth = currentMonthName === "Abril 2024" ? "2024-04" : currentMonthName === "Junio 2024" ? "2024-06" : "2024-05";
+                    const checkInDate = `${yearMonth}-${item.day.toString().padStart(2, "0")}`;
+                    onNavigate("new-booking", selectedCabanaId, checkInDate);
+                  }
+                };
+
+                return (
+                  <div
+                    key={`${item.day}-${idx}`}
+                    onClick={handleDayClick}
+                    className={`h-20 border rounded-lg flex flex-col p-2 relative transition-all ${
+                      selectedCabanaId !== "all" && item.currentMonth ? "hover:scale-[1.03] cursor-pointer hover:border-[#b2ceb4]/40 hover:bg-neutral-850/50" : ""
+                    } ${cellBg}`}
+                  >
+                    <span className="text-xs font-sans font-bold">{item.day}</span>
+                    {statusDot}
+                  </div>
+                );
+              })}
+            </div>
+          )}
 
           {/* Indicators Legend */}
           <div className="flex flex-wrap gap-6 mt-6 pt-6 border-t border-neutral-900">

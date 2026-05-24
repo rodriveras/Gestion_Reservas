@@ -26,16 +26,15 @@ export default function AdminLauncher({ onNavigate, onLogoutToGuest, stats }: Ad
       className="space-y-8"
     >
       {/* Hero Section */}
-      <section className="relative h-[240px] md:h-[350px] w-full rounded-2xl overflow-hidden shadow-2xl border border-neutral-800/40">
+      <section className="relative h-[150px] md:h-[200px] w-full rounded-2xl overflow-hidden shadow-2xl border border-neutral-800/40">
         <img
           alt="Lodge Background"
           className="w-full h-full object-cover brightness-75 scale-105"
           src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtCC2fGwoOHRMl6hhKg5CHc_IkqXBTNk8ZRI6bINLHstd2JKjZQKZkfA16K18cBWcwL6oTO4e02H6BP0vhMiGk6O9qneFFFZ35LKI0DXVpShbE67YJNnLzOJjF8NI6LUHE6klxydybaGcfGqN6vpbiBDQyWClJ_kzlnl2s1rxmp5Z4GKW6IpBhDLfCt_0x5x-w2wWcdeIeNrOKkiAylYs_j785rBc_osR6-08kvtkBa61XoEcmLWQXDvczYwd0KpwzqXUs14YZcqvK"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent"></div>
-        <div className="absolute bottom-6 left-6 md:left-10">
-          <p className="text-[#f6bb89] font-headline text-2xl italic mb-1">Entre Nieves</p>
-          <h1 className="text-white font-headline text-3xl md:text-5xl leading-tight font-semibold tracking-tight">
+        <div className="absolute inset-0 bg-gradient-to-t from-black via-black/25 to-transparent"></div>
+        <div className="absolute bottom-5 left-6 md:left-10">
+          <h1 className="text-white font-headline text-2xl md:text-4xl leading-tight font-semibold tracking-tight">
             Gestión de Cabañas
           </h1>
         </div>
