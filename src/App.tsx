@@ -441,12 +441,13 @@ export default function App() {
       </header>
 
       {/* Main Content Render Layout */}
-      <main className="relative z-10 flex-grow w-full max-w-container-max mx-auto px-3 xs:px-4 md:px-6 py-2 xs:py-4 md:py-8 pb-20">
+      <main className="relative z-10 flex-grow w-full max-w-container-max mx-auto px-6 py-8 pb-20">
         {currentScreen === "admin" && (
           <AdminLauncher
             onNavigate={(screen) => navigateTo(screen)}
             onLogoutToGuest={() => navigateTo("guest")}
             stats={statsSummary}
+            complexName={administracion[0]?.Nombre_complejo || "ENTRE NIEVES"}
           />
         )}
 
