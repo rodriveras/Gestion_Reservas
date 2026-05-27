@@ -57,7 +57,7 @@ export default function CalendarView({ cabanas, reservas, clientes, onBack, onNa
       return {
         id: r.id,
         guestName: `${client.nombre} ${client.apellido}`,
-        price: (r.montoTotal || 0) * 1000,
+        price: r.montoTotal || 0,
         cabinName: cabana.nombre,
         dateText,
         passengers: r.cantidadPersonas || 0,
@@ -337,9 +337,6 @@ export default function CalendarView({ cabanas, reservas, clientes, onBack, onNa
                       <div className="w-36 shrink-0 text-left flex flex-col justify-center pl-1">
                         <span className="text-xs font-headline font-bold text-neutral-200 truncate">
                           {cab.nombre}
-                        </span>
-                        <span className="text-[10px] font-sans font-bold text-[#b2ceb4] mt-0.5 tracking-wide">
-                          ${(cab.precioBase * 1000).toLocaleString("es-CL")}
                         </span>
                       </div>
                       

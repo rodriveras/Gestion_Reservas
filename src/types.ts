@@ -18,6 +18,7 @@ export interface Cabana {
   imagenUrl: string;
   lat: number;
   lng: number;
+  slogan?: string;
 }
 
 export interface Cliente {

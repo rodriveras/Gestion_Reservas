@@ -32,29 +32,50 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
 
   const [selectedCabinSegment, setSelectedCabinSegment] = useState<string | null>(null);
   const [selectedChannelSegment, setSelectedChannelSegment] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<number | "Todos">("Todos");
 
-  // 1. Calculate stats dynamically
-  const totalBoringIncomes = safeReservas.reduce((acc, r) => acc + r.montoTotal, 0);
-  const totalServiceIncomes = safeContrataciones.reduce((acc, c) => acc + c.subtotal, 0);
+  // Filter bookings and service contracts to only those belonging to the selected year,
+  // and exclude cancelled reservations.
+  const yearReservas = safeReservas.filter((r) => {
+    if (r.estadoReserva === "Cancelada") return false;
+    if (selectedYear === "Todos") return true;
+    const date = parseLocalDate(r.checkIn);
+    return !isNaN(date.getTime()) && date.getFullYear() === selectedYear;
+  });
+
+  const yearContrataciones = safeContrataciones.filter((c) => {
+    const assocReserva = safeReservas.find(r => r.id === c.reservaId);
+    if (assocReserva && assocReserva.estadoReserva === "Cancelada") return false;
+
+    if (selectedYear === "Todos") return true;
+    const dateStr = (c as any).fecha || (c as any).fechaContratacion;
+    if (!dateStr) return false;
+    const date = parseLocalDate(dateStr);
+    return !isNaN(date.getTime()) && date.getFullYear() === selectedYear;
+  });
+
+  // 1. Calculate stats dynamically based on the selected year
+  const totalBoringIncomes = yearReservas.reduce((acc, r) => acc + r.montoTotal, 0);
+  const totalServiceIncomes = yearContrataciones.reduce((acc, c) => acc + c.subtotal, 0);
   const ingresosProyectados = totalBoringIncomes + totalServiceIncomes;
 
-  // Outstanding unpaid balancing
-  const unpaidServices = safeContrataciones
+  // Outstanding unpaid balancing based on the selected year
+  const unpaidServices = yearContrataciones
     .filter((c) => c.estadoPago !== "Pagado")
     .reduce((acc, c) => acc + (c.estadoPago === "Parcial" ? c.subtotal / 2 : c.subtotal), 0);
-  const unpaidBookings = safeReservas.reduce((acc, r) => acc + (r.montoTotal - r.montoAnticipo), 0);
+  const unpaidBookings = yearReservas.reduce((acc, r) => acc + (r.montoTotal - r.montoAnticipo), 0);
   const saldoPorCobrar = unpaidServices + unpaidBookings;
 
-  // Avg nights
-  const totalNoches = safeReservas.reduce((acc, r) => acc + r.noches, 0);
-  const estadiaPromedio = safeReservas.length > 0 ? (totalNoches / safeReservas.length).toFixed(1) : "0";
+  // Avg nights based on the selected year
+  const totalNoches = yearReservas.reduce((acc, r) => acc + r.noches, 0);
+  const estadiaPromedio = yearReservas.length > 0 ? (totalNoches / yearReservas.length).toFixed(1) : "0";
 
-  // Total reservations
-  const reservasTotalesCount = safeReservas.length;
+  // Total reservations based on the selected year
+  const reservasTotalesCount = yearReservas.length;
 
-  // 2. Compute reservations per cabin for the Donut Chart
+  // 2. Compute reservations per cabin for the Donut Chart based on the selected year
   const cabinBookingCounts = safeCabanas.map((c) => {
-    const count = safeReservas.filter((r) => r.cabanaId === c.id).length;
+    const count = yearReservas.filter((r) => r.cabanaId === c.id).length;
     return {
       nombre: c.nombre,
       count,
@@ -81,10 +102,10 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
     };
   });
 
-  // 3. Compute booking channels
+  // 3. Compute booking channels based on the selected year
   const channels = ["Airbnb", "Directo", "Booking", "Otros"] as const;
   const channelCounts = channels.map((chan) => {
-    const count = safeReservas.filter((r) => {
+    const count = yearReservas.filter((r) => {
       if (chan === "Otros") {
         return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
       }
@@ -115,14 +136,14 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
   });
 
   const selectedCabinReservations = selectedCabinSegment
-    ? safeReservas.filter((r) => {
+    ? yearReservas.filter((r) => {
         const cab = safeCabanas.find((c) => c.nombre === selectedCabinSegment);
         return cab && r.cabanaId === cab.id;
       })
     : [];
 
   const selectedChannelReservations = selectedChannelSegment
-    ? safeReservas.filter((r) => {
+    ? yearReservas.filter((r) => {
         if (selectedChannelSegment === "Otros") {
           return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
         }
@@ -130,28 +151,25 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
       })
     : [];
 
-  // State to filter monthly incomes by selected year
-  const [selectedYear, setSelectedYear] = useState<number>(2026);
-
   const monthNames = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
   const monthlyValues: { [key: number]: number } = {};
 
-  // Distribute booking values dynamically, filtering by the selected year
-  safeReservas.forEach((r) => {
+  // Distribute booking values dynamically
+  yearReservas.forEach((r) => {
     const date = parseLocalDate(r.checkIn);
-    if (!isNaN(date.getTime()) && date.getFullYear() === selectedYear) {
+    if (!isNaN(date.getTime())) {
       const m = date.getMonth();
-      monthlyValues[m] = (monthlyValues[m] || 0) + r.montoTotal * 1000;
+      monthlyValues[m] = (monthlyValues[m] || 0) + r.montoTotal;
     }
   });
 
-  safeContrataciones.forEach((c) => {
+  yearContrataciones.forEach((c) => {
     const dateStr = (c as any).fecha || (c as any).fechaContratacion;
     if (dateStr) {
       const date = parseLocalDate(dateStr);
-      if (!isNaN(date.getTime()) && date.getFullYear() === selectedYear) {
+      if (!isNaN(date.getTime())) {
         const m = date.getMonth();
-        monthlyValues[m] = (monthlyValues[m] || 0) + c.subtotal * 1000;
+        monthlyValues[m] = (monthlyValues[m] || 0) + c.subtotal;
       }
     }
   });
@@ -217,9 +235,25 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
             Resumen ejecutivo del rendimiento real y proyectado de las cabañas.
           </p>
         </div>
-        <div className="bg-[#1b1e1b] border-t border-neutral-800 px-4 py-2 rounded-xl flex items-center gap-2 self-start md:self-auto">
-          <TrendingUp className="w-4 h-4 text-[#f6bb89]" />
-          <span className="text-xs font-sans font-bold text-neutral-300">MODO COMPACTO ACTIVO</span>
+        <div className="flex items-center gap-3 bg-[#1b1e1b] border border-neutral-800/80 p-1.5 rounded-xl self-start md:self-auto shadow-md">
+          <span className="text-[10px] font-sans font-extrabold text-[#f6bb89] uppercase tracking-widest pl-2">
+            FILTRO GENERAL AÑO:
+          </span>
+          <div className="flex bg-[#121412] p-1 rounded-lg border border-neutral-900 shadow-inner">
+            {[2024, 2025, 2026, "Todos"].map((yr) => (
+              <button
+                key={yr}
+                onClick={() => setSelectedYear(yr as any)}
+                className={`px-3.5 py-1.5 text-xs font-sans font-bold rounded-md transition-all duration-200 cursor-pointer ${
+                  selectedYear === yr
+                    ? "bg-[#4a634e] text-white shadow-md font-extrabold scale-105"
+                    : "text-neutral-400 hover:text-white hover:bg-neutral-900/30"
+                }`}
+              >
+                {yr}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
@@ -234,7 +268,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
             <DollarSign className="w-4 h-4 text-[#f6bb89]" />
           </div>
           <div className="text-xl md:text-2xl font-headline font-semibold text-[#e2e3df]">
-            {formatCurrency(ingresosProyectados * 1000)}
+            {formatCurrency(ingresosProyectados)}
           </div>
         </div>
 
@@ -247,7 +281,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
             <span className="text-xs font-sans bg-amber-950/40 text-[#f9ba82] px-1.5 py-0.5 rounded">Cobros</span>
           </div>
           <div className="text-xl md:text-2xl font-headline font-semibold text-[#e2e3df]">
-            {formatCurrency(saldoPorCobrar * 1000)}
+            {formatCurrency(saldoPorCobrar)}
           </div>
         </div>
 
@@ -445,7 +479,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                       RESERVAS ACTIVAS
                     </span>
                     <span className="text-2xl font-sans font-black text-white mt-1">
-                      {safeReservas.filter((r) => {
+                      {yearReservas.filter((r) => {
                         const cab = safeCabanas.find((c) => c.nombre === selectedCabinSegment);
                         return cab && r.cabanaId === cab.id;
                       }).length}
@@ -458,10 +492,10 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                     </span>
                     <span className="text-2xl font-sans font-black text-[#10b981] mt-1">
                       {Math.round(
-                        (safeReservas.filter((r) => {
+                        (yearReservas.filter((r) => {
                           const cab = safeCabanas.find((c) => c.nombre === selectedCabinSegment);
                           return cab && r.cabanaId === cab.id;
-                        }).length / (safeReservas.length || 1)) * 100
+                        }).length / (yearReservas.length || 1)) * 100
                       )}%
                     </span>
                   </div>
@@ -631,7 +665,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                       RESERVAS ACTIVAS
                     </span>
                     <span className="text-2xl font-sans font-black text-white mt-1">
-                      {safeReservas.filter((r) => {
+                      {yearReservas.filter((r) => {
                         if (selectedChannelSegment === "Otros") {
                           return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
                         }
@@ -646,12 +680,12 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                     </span>
                     <span className="text-2xl font-sans font-black text-[#818cf8] mt-1">
                       {Math.round(
-                        (safeReservas.filter((r) => {
+                        (yearReservas.filter((r) => {
                           if (selectedChannelSegment === "Otros") {
                             return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
                           }
                           return r.canalVentas === selectedChannelSegment;
-                        }).length / (safeReservas.length || 1)) * 100
+                        }).length / (yearReservas.length || 1)) * 100
                       )}%
                     </span>
                   </div>
@@ -668,23 +702,10 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
           <div className="flex items-center gap-2">
             <BarChart3 className="w-5 h-5 text-cyan-400" />
             <h3 className="text-lg font-headline font-semibold text-neutral-200">
-              Ingresos Proyectados por Mes (CLP)
+              {selectedYear === "Todos"
+                ? "Ingresos Proyectados por Mes (Histórico Acumulado)"
+                : `Ingresos Proyectados por Mes (${selectedYear})`}
             </h3>
-          </div>
-          <div className="flex bg-[#121412] p-1 rounded-lg border border-neutral-800/60 self-start sm:self-auto">
-            {[2024, 2025, 2026].map((yr) => (
-              <button
-                key={yr}
-                onClick={() => setSelectedYear(yr)}
-                className={`px-3 py-1 text-xs font-sans font-bold rounded-md transition-all duration-200 cursor-pointer ${
-                  selectedYear === yr
-                    ? "bg-[#4a634e] text-white shadow-md"
-                    : "text-neutral-400 hover:text-white hover:bg-neutral-900/50"
-                }`}
-              >
-                {yr}
-              </button>
-            ))}
           </div>
         </div>
 
@@ -696,7 +717,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                 Sin Movimientos Comerciales
               </span>
               <p className="text-xs text-neutral-500 max-w-sm">
-                No se registran estadías ni consumos facturados en el año {selectedYear}.
+                No se registran estadías ni consumos facturados {selectedYear === "Todos" ? "en el historial completo" : `en el año ${selectedYear}`}.
               </p>
             </div>
           ) : (

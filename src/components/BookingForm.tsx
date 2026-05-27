@@ -15,6 +15,7 @@ interface BookingFormProps {
   onSave: (booking: Reserva) => void;
   onDelete?: (bookingId: string) => void;
   onBack: () => void;
+  onCreateClient?: (cabanaId: string, checkIn: string) => void;
   initialCabanaId?: string;
   initialCheckIn?: string;
   viewBookingId?: string;
@@ -27,6 +28,7 @@ export default function BookingForm({
   onSave,
   onDelete,
   onBack,
+  onCreateClient,
   initialCabanaId = "",
   initialCheckIn = "",
   viewBookingId = ""
@@ -60,8 +62,8 @@ export default function BookingForm({
   });
   
   const [canalVentas, setCanalVentas] = useState<Reserva["canalVentas"]>(() => existingBooking?.canalVentas || "Directo");
-  const [montoTotal, setMontoTotal] = useState(() => existingBooking?.montoTotal ? (existingBooking.montoTotal * 1000).toString() : "");
-  const [montoAnticipo, setMontoAnticipo] = useState(() => existingBooking?.montoAnticipo ? (existingBooking.montoAnticipo * 1000).toString() : "");
+  const [montoTotal, setMontoTotal] = useState(() => existingBooking?.montoTotal ? existingBooking.montoTotal.toString() : "");
+  const [montoAnticipo, setMontoAnticipo] = useState(() => existingBooking?.montoAnticipo ? existingBooking.montoAnticipo.toString() : "");
   const [estadoReserva, setEstadoReserva] = useState<Reserva["estadoReserva"]>(() => existingBooking?.estadoReserva || "Pendiente de Pago");
   const [metodoPago, setMetodoPago] = useState<Reserva["metodoPago"]>(() => existingBooking?.metodoPago || "Transferencia");
 
@@ -99,8 +101,11 @@ export default function BookingForm({
   // Passenger capacity validation
   const exceedsCapacity = selectedCabinObj && pasajeros > selectedCabinObj.capacidad;
 
+  // Deposit validation
+  const hasDepositError = !!(Number(montoTotal) > 0 && Number(montoAnticipo) >= Number(montoTotal));
+
   // Form disable logic
-  const isFormDisabled = isClientBlockedOrSuspended || isCabinNotAvailable || hasDateError || exceedsCapacity;
+  const isFormDisabled = isClientBlockedOrSuspended || isCabinNotAvailable || hasDateError || exceedsCapacity || hasDepositError;
 
   // Automatically adjust booking date calendar view month if fechaReserva changes
   useEffect(() => {
@@ -170,7 +175,7 @@ export default function BookingForm({
     if (cabanaId && isEditMode) {
       const cabana = cabanas.find((c) => c.id === cabanaId);
       if (cabana) {
-        const calculatedTotal = cabana.precioBase * noches * 1000;
+        const calculatedTotal = cabana.precioBase * noches;
         setMontoTotal(calculatedTotal.toString());
         // set default deposit to 30% of total
         setMontoAnticipo(Math.round(calculatedTotal * 0.3).toString());
@@ -469,6 +474,11 @@ export default function BookingForm({
       return;
     }
 
+    if (hasDepositError) {
+      alert("Error: El monto de anticipo/depósito debe ser menor que el monto total de la reserva.");
+      return;
+    }
+
     const newBooking: Reserva = {
       id: bookingId,
       clienteId,
@@ -479,8 +489,8 @@ export default function BookingForm({
       noches,
       cantidadPersonas: pasajeros,
       canalVentas,
-      montoTotal: (Number(montoTotal) || 0) / 1000,
-      montoAnticipo: (Number(montoAnticipo) || 0) / 1000,
+      montoTotal: Number(montoTotal) || 0,
+      montoAnticipo: Number(montoAnticipo) || 0,
       estadoReserva,
       metodoPago,
     };
@@ -556,6 +566,11 @@ export default function BookingForm({
                     ⚠️ Excede la cantidad máxima de personas
                   </span>
                 )}
+                {hasDepositError && (
+                  <span className="text-[10px] font-sans font-bold bg-red-950/45 text-red-400 border border-red-900/40 px-3 py-1 rounded-full animate-pulse shadow-md shadow-red-950/20 block text-right">
+                    ⚠️ El anticipo debe ser menor que el monto total
+                  </span>
+                )}
               </div>
             </h3>
 
@@ -565,27 +580,40 @@ export default function BookingForm({
                 <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
                   Seleccionar Cliente
                 </label>
-                <div className="relative">
-                  <select
-                    required
-                    value={clienteId}
-                    onChange={(e) => setClienteId(e.target.value)}
-                    disabled={!isEditMode}
-                    className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
-                  >
-                    <option value="">Buscar un cliente existente...</option>
-                    {clientes.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre} {c.apellido} — {c.numeroDocumento} {c.id === "CLI-2026-AUTO" ? "(AUTO)" : ""}
-                      </option>
-                    ))}
-                  </select>
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
-                    person
-                  </span>
-                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                    expand_more
-                  </span>
+                <div className="flex gap-2">
+                  <div className="relative flex-grow">
+                    <select
+                      required
+                      value={clienteId}
+                      onChange={(e) => setClienteId(e.target.value)}
+                      disabled={!isEditMode}
+                      className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
+                    >
+                      <option value="">Buscar un cliente existente...</option>
+                      {clientes.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.nombre} {c.apellido} — {c.numeroDocumento} {c.id === "CLI-2026-AUTO" ? "(AUTO)" : ""}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
+                      person
+                    </span>
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                      expand_more
+                    </span>
+                  </div>
+                  {isEditMode && onCreateClient && (
+                    <button
+                      type="button"
+                      onClick={() => onCreateClient(cabanaId, entrada)}
+                      className="bg-[#4a634e] text-white px-4 rounded-lg font-sans font-bold text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 shrink-0 shadow-md cursor-pointer border border-[#b2ceb4]/20"
+                      title="Registrar nuevo cliente"
+                    >
+                      <span className="material-symbols-outlined text-sm">person_add</span>
+                      <span>Nuevo Cliente</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -606,7 +634,7 @@ export default function BookingForm({
                       <option value="">Elegir una propiedad...</option>
                       {cabanas.map((c) => (
                         <option key={c.id} value={c.id}>
-                          {c.nombre} (Capacidad: {c.capacidad} Pers.) — ${(c.precioBase * 1000).toLocaleString("es-CL")}/Noche
+                          {c.nombre} (Capacidad: {c.capacidad} Pers.) — ${c.precioBase.toLocaleString("es-CL")}/Noche
                         </option>
                       ))}
                     </select>
@@ -827,7 +855,7 @@ export default function BookingForm({
                 Monto Anticipo / Depósito ($)
               </label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-neutral-500 text-sm">$</span>
+                <span className={`absolute left-3 top-1/2 -translate-y-1/2 font-bold text-sm ${hasDepositError ? "text-red-400" : "text-neutral-500"}`}>$</span>
                 <input
                   type="number"
                   required
@@ -835,9 +863,16 @@ export default function BookingForm({
                   value={montoAnticipo}
                   onChange={(e) => setMontoAnticipo(e.target.value)}
                   disabled={!isEditMode}
-                  className="w-full pl-7 pr-4 bg-[#121412] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-sm font-bold outline-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  className={`w-full pl-7 pr-4 bg-[#121412] text-neutral-100 border rounded-lg p-3 text-sm font-bold outline-none disabled:opacity-75 disabled:cursor-not-allowed transition-colors ${
+                    hasDepositError ? "border-red-500 focus:border-red-500 text-red-200" : "border-neutral-700 focus:border-[#b2ceb4]"
+                  }`}
                 />
               </div>
+              {hasDepositError && (
+                <p className="text-[10px] text-red-400 font-sans font-bold mt-1">
+                  ⚠️ Debe ser menor que el monto total
+                </p>
+              )}
             </div>
 
             {/* Estado Reserva */}

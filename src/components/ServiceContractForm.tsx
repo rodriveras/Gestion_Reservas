@@ -68,6 +68,9 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
       const srv = servicios.find((s) => s.id === val);
       if (srv) {
         setPrecioPactado(srv.precio.toString());
+        if (srv.estado !== "Activo") {
+          alert(`¡Advertencia! El servicio seleccionado "${srv.nombre}" está en estado "${srv.estado}". Solo se permite guardar contrataciones para servicios en estado "Activo".`);
+        }
       }
     } else {
       setPrecioPactado("");
@@ -139,11 +142,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
               <LinkIcon className="w-4.5 h-4.5 text-[#f6bb89]" />
               <span>Detalles del Vínculo</span>
             </div>
-            {selectedServiceObj && selectedServiceObj.estado !== "Activo" && (
-              <span className="text-[10px] font-sans font-bold bg-red-950/45 text-red-400 border border-red-900/40 px-3 py-1 rounded-full animate-pulse shadow-md shadow-red-950/20 block text-right">
-                ⚠️ Servicio no activo (Estado: {selectedServiceObj.estado})
-              </span>
-            )}
+            {/* Warning banner removed from here and relocated next to label */}
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -211,9 +210,20 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
 
             {/* Seleccionar Servicio */}
             <div className="space-y-1">
-              <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                Seleccionar Servicio
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
+                  Seleccionar Servicio
+                </label>
+                {selectedServiceObj && selectedServiceObj.estado !== "Activo" && (
+                  <button
+                    type="button"
+                    onClick={() => alert(`Advertencia: El servicio "${selectedServiceObj.nombre}" tiene estado "${selectedServiceObj.estado}". Solo los servicios en estado "Activo" se pueden contratar.`)}
+                    className="flex items-center gap-1.5 px-2 py-0.5 bg-red-950/80 hover:bg-red-900/60 text-red-400 border border-red-900/40 rounded text-[9px] font-sans font-bold uppercase tracking-wider animate-pulse shadow-sm cursor-pointer"
+                  >
+                    <span>⚠️ No Activo ({selectedServiceObj.estado})</span>
+                  </button>
+                )}
+              </div>
               <div className="relative">
                 <select
                   required

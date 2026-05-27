@@ -15,29 +15,70 @@ interface GuestViewProps {
 }
 
 export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestViewProps) {
-  const [activeMonths, setActiveMonths] = useState<Record<string, string>>({
-    "CAB-01": "Noviembre",
-    "CAB-02": "Noviembre",
-    "CAB-03": "Noviembre",
+  // Synchronized global date for all guest calendars
+  const [currentDate, setCurrentDate] = useState<Date>(() => {
+    const today = new Date();
+    return new Date(today.getFullYear(), today.getMonth(), 1);
   });
 
-  // Calculate day reservation status for mockup calendar inside card
+  const monthNames = [
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+  ];
+
+  const currentMonthName = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+
+  const parseLocalDate = (dateStr: string) => {
+    if (!dateStr) return new Date(NaN);
+    const normalized = dateStr.includes("T") ? dateStr : `${dateStr}T12:00:00`;
+    return new Date(normalized);
+  };
+
+  // Real database availability detection
   const isDayReservedForCabin = (cabinId: string, dayNum: number) => {
-    if (cabinId === "CAB-01") {
-      return [3, 6, 10, 13, 17, 20, 24, 27].includes(dayNum);
-    } else if (cabinId === "CAB-02") {
-      return [1, 2, 3, 7, 8, 14, 15, 21, 22, 28].includes(dayNum);
-    } else {
-      return [1, 2, 3, 10, 11, 12, 18, 19, 25, 26].includes(dayNum);
-    }
+    const checkDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayNum);
+    const checkMs = checkDate.setHours(12, 0, 0, 0); // Local noon
+
+    return (reservas || []).some((r) => {
+      if (r.cabanaId !== cabinId || r.estadoReserva === "Cancelada") return false;
+      const startMs = parseLocalDate(r.checkIn).getTime();
+      const endMs = parseLocalDate(r.checkOut).getTime();
+      return checkMs >= startMs && checkMs < endMs;
+    });
   };
 
   const getDaysArray = () => {
+    const daysInMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0).getDate();
     const list = [];
-    for (let i = 1; i <= 31; i++) {
+    for (let i = 1; i <= daysInMonth; i++) {
       list.push(i);
     }
     return list;
+  };
+
+  const getOffsetDays = () => {
+    const firstDayIndex = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1).getDay(); // 0 = Sunday, 1 = Monday...
+    return firstDayIndex === 0 ? 6 : firstDayIndex - 1;
+  };
+
+  // Helper to fallback to premium tourist lodge pictures when no valid image is set
+  const getCabinImage = (cab: Cabana) => {
+    if (cab.imagenUrl && cab.imagenUrl.startsWith("http") && !cab.imagenUrl.includes("placeholder") && !cab.imagenUrl.includes("example.com")) {
+      return cab.imagenUrl;
+    }
+    const nameLower = (cab.nombre || "").toLowerCase();
+    const typeLower = (cab.tipo || "").toLowerCase();
+    
+    if (nameLower.includes("domo") || typeLower.includes("domo")) {
+      return "https://images.unsplash.com/photo-1470770841072-f978cf4d019e?q=80&w=800&auto=format&fit=crop";
+    }
+    if (nameLower.includes("suite") || typeLower.includes("suite")) {
+      return "https://images.unsplash.com/photo-1549693578-d683be217e58?q=80&w=800&auto=format&fit=crop";
+    }
+    if (nameLower.includes("familiar") || typeLower.includes("familiar") || nameLower.includes("roble")) {
+      return "https://images.unsplash.com/photo-1510798831971-661eb04b3739?q=80&w=800&auto=format&fit=crop";
+    }
+    return "https://images.unsplash.com/photo-1504280390367-361c6d9f38f4?q=80&w=800&auto=format&fit=crop";
   };
 
   return (
@@ -60,7 +101,6 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
       <section className="flex flex-row overflow-x-auto lg:flex-col lg:space-y-8 gap-6 lg:gap-0 pb-6 lg:pb-0 scroll-smooth snap-x snap-mandatory scrollbar-thin scrollbar-thumb-neutral-850">
         {cabanas.map((cab) => {
           const isAvailable = cab.estado === "Disponible";
-          const currentMonth = activeMonths[cab.id] || "Noviembre";
 
           return (
             <div
@@ -71,7 +111,7 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
                 {/* 1. Cabin Image Left Block */}
                 <div className="lg:col-span-4 relative h-64 lg:h-full min-h-[200px] overflow-hidden">
                   <img
-                    src={cab.imagenUrl}
+                    src={getCabinImage(cab)}
                     alt={cab.nombre}
                     className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                   />
@@ -95,14 +135,16 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
                       <h4 className="text-2xl font-headline font-semibold text-neutral-100">
                         {cab.nombre}
                       </h4>
-                      <p className="text-xs font-sans italic text-neutral-400 mt-1">
-                        {cab.id === "CAB-01"
-                          ? "Un susurro entre las copas de los árboles."
-                          : cab.id === "CAB-02"
-                          ? "Donde el tiempo se detiene al amanecer."
-                          : "Vistas infinitas hacia el corazón del bosque."}
+                      <p className="text-xs font-sans italic text-[#f6bb89] font-medium mt-1">
+                        {cab.slogan || (
+                          cab.id === "CAB-01"
+                            ? "Un susurro entre las copas de los árboles."
+                            : cab.id === "CAB-02"
+                            ? "Donde el tiempo se detiene al amanecer."
+                            : "Vistas infinitas hacia el corazón del bosque."
+                        )}
                       </p>
-                      <p className="text-xs text-neutral-400 mt-4 leading-relaxed font-sans font-light">
+                      <p className="text-xs text-neutral-200 mt-4 leading-relaxed font-sans font-normal">
                         {cab.descripcion}
                       </p>
                     </div>
@@ -120,28 +162,22 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
                   <div className="border-t border-neutral-850 pt-4 space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-sans font-bold text-neutral-300">
-                        Disponibilidad - {currentMonth}
+                        Disponibilidad - {currentMonthName}
                       </span>
                       <div className="flex gap-1">
                         <button
                           onClick={() =>
-                            setActiveMonths((prev) => ({
-                              ...prev,
-                              [cab.id]: prev[cab.id] === "Noviembre" ? "Octubre" : "Noviembre",
-                            }))
+                            setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
                           }
-                          className="p-1 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded transition-colors"
+                          className="p-1 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded transition-colors cursor-pointer"
                         >
                           <ChevronLeft className="w-4 h-4" />
                         </button>
                         <button
                           onClick={() =>
-                            setActiveMonths((prev) => ({
-                              ...prev,
-                              [cab.id]: prev[cab.id] === "Noviembre" ? "Diciembre" : "Noviembre",
-                            }))
+                            setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
                           }
-                          className="p-1 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded transition-colors"
+                          className="p-1 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded transition-colors cursor-pointer"
                         >
                           <ChevronRight className="w-4 h-4" />
                         </button>
@@ -157,6 +193,12 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
 
                     {/* Days circles list */}
                     <div className="grid grid-cols-7 gap-1 text-center">
+                      {/* Render empty placeholders for offset days */}
+                      {Array.from({ length: getOffsetDays() }).map((_, idx) => (
+                        <div key={`offset-${idx}`} className="w-6 h-6"></div>
+                      ))}
+
+                      {/* Render real days */}
                       {getDaysArray().map((d) => {
                         const isReserved = isDayReservedForCabin(cab.id, d);
                         const cellColor = isReserved

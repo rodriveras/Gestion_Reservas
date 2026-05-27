@@ -34,7 +34,8 @@ export const sheetsService = {
     }
 
     try {
-      const response = await fetch(API_URL);
+      // Append cache-busting timestamp to prevent aggressive browser caching of Apps Script responses
+      const response = await fetch(`${API_URL}?_t=${Date.now()}`);
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
       
       const data = await response.json();

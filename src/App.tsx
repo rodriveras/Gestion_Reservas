@@ -111,6 +111,7 @@ export default function App() {
   const [preselectedCabinId, setPreselectedCabinId] = useState<string>("");
   const [preselectedCheckIn, setPreselectedCheckIn] = useState<string>("");
   const [viewBookingId, setViewBookingId] = useState<string>("");
+  const [clientFormReturnTo, setClientFormReturnTo] = useState<string>("");
 
   // Navigation transition helper
   const navigateTo = (screen: string) => {
@@ -178,10 +179,85 @@ export default function App() {
     loadCloudData();
   }, []);
 
+  // --- Automatic Purge of Fictitious Mock Data (2024 seeds) ---
+  useEffect(() => {
+    // List of known mock IDs to delete permanently
+    const mockCabanas = ["CAB-01", "CAB-02", "CAB-03"];
+    const mockClientes = ["CLI-2024-AUTO", "CLI-77824", "CLI-77825", "CLI-77826"];
+    const mockServicios = ["01", "02", "03", "08"];
+    const mockReservas = ["RES-77824", "RES-77825", "RES-77826", "RES-MOCK-01"];
+    const mockContrataciones = ["CON-01", "CON-02"];
+
+    const hasMockData = 
+      reservas.some(r => mockReservas.includes(r.id)) ||
+      clientes.some(c => mockClientes.includes(c.id)) ||
+      cabanas.some(cb => mockCabanas.includes(cb.id)) ||
+      servicios.some(s => mockServicios.includes(s.id)) ||
+      contrataciones.some(con => mockContrataciones.includes(con.id));
+
+    if (!hasMockData) return;
+
+    async function runPurge() {
+      setIsSyncing(true);
+      setSyncStatus("loading");
+
+      // 1. Delete mock bookings
+      for (const rId of mockReservas) {
+        if (reservas.some(r => r.id === rId)) {
+          await sheetsService.deleteRecord("reservas", rId);
+        }
+      }
+      // 2. Delete mock service contracts
+      for (const cId of mockContrataciones) {
+        if (contrataciones.some(c => c.id === cId)) {
+          await sheetsService.deleteRecord("contrataciones", cId);
+        }
+      }
+      // 3. Delete mock clients
+      for (const clId of mockClientes) {
+        if (clientes.some(c => c.id === clId)) {
+          await sheetsService.deleteRecord("clientes", clId);
+        }
+      }
+      // 4. Delete mock cabins
+      for (const cabId of mockCabanas) {
+        if (cabanas.some(c => c.id === cabId)) {
+          await sheetsService.deleteRecord("cabanas", cabId);
+        }
+      }
+      // 5. Delete mock services
+      for (const sId of mockServicios) {
+        if (servicios.some(s => s.id === sId)) {
+          await sheetsService.deleteRecord("servicios", sId);
+        }
+      }
+
+      // Update local state to remove the mock records immediately
+      setReservas(prev => prev.filter(r => !mockReservas.includes(r.id)));
+      setContrataciones(prev => prev.filter(c => !mockContrataciones.includes(c.id)));
+      setClientes(prev => prev.filter(c => !mockClientes.includes(c.id)));
+      setCabanas(prev => prev.filter(c => !mockCabanas.includes(c.id)));
+      setServicios(prev => prev.filter(s => !mockServicios.includes(s.id)));
+
+      setSyncStatus("success");
+      setIsSyncing(false);
+      alert("¡Se ha realizado una limpieza definitiva de datos ficticios de prueba en el sistema!");
+      setTimeout(() => setSyncStatus("idle"), 3000);
+    }
+
+    runPurge();
+  }, [reservas, clientes, cabanas, servicios, contrataciones]);
+
   // --- Handlers con persistencia en Google Sheets ---
   const handleAddCabin = async (newCabin: Cabana) => {
     // 1. Actualización optimista instantánea en UI
-    setCabanas((prev) => [newCabin, ...prev]);
+    setCabanas((prev) => {
+      const exists = prev.some((c) => c.id === newCabin.id);
+      if (exists) {
+        return prev.map((c) => (c.id === newCabin.id ? newCabin : c));
+      }
+      return [newCabin, ...prev];
+    });
     
     // 2. Intentar guardar en la nube
     setIsSyncing(true);
@@ -210,7 +286,13 @@ export default function App() {
   };
 
   const handleAddService = async (newService: Servicio) => {
-    setServicios((prev) => [newService, ...prev]);
+    setServicios((prev) => {
+      const exists = prev.some((s) => s.id === newService.id);
+      if (exists) {
+        return prev.map((s) => (s.id === newService.id ? newService : s));
+      }
+      return [newService, ...prev];
+    });
     
     setIsSyncing(true);
     setSyncStatus("loading");
@@ -261,7 +343,7 @@ export default function App() {
 
   // Stats summary helper object
   const statsSummary = {
-    reservasCount: reservas.length,
+    reservasCount: reservas.filter((r) => r.estadoReserva !== "Cancelada").length,
     cabanasCount: cabanas.length,
     clientesCount: clientes.length,
     serviciosCount: servicios.length,
@@ -383,6 +465,7 @@ export default function App() {
 
         {currentScreen === "new-cabin" && (
           <CabinForm
+            cabanas={cabanas}
             onSave={handleAddCabin}
             onBack={() => navigateTo(lastScreen)}
           />
@@ -391,13 +474,31 @@ export default function App() {
         {currentScreen === "new-client" && (
           <ClientForm
             clientes={clientes}
-            onSave={handleAddClient}
-            onBack={() => navigateTo(lastScreen)}
+            onSave={(newClient) => {
+              handleAddClient(newClient);
+              if (clientFormReturnTo) {
+                const returnTo = clientFormReturnTo;
+                setClientFormReturnTo("");
+                navigateTo(returnTo);
+              } else {
+                navigateTo(lastScreen);
+              }
+            }}
+            onBack={() => {
+              if (clientFormReturnTo) {
+                const returnTo = clientFormReturnTo;
+                setClientFormReturnTo("");
+                navigateTo(returnTo);
+              } else {
+                navigateTo(lastScreen);
+              }
+            }}
           />
         )}
 
         {currentScreen === "new-service" && (
           <ServiceForm
+            servicios={servicios}
             onSave={handleAddService}
             onBack={() => navigateTo(lastScreen)}
           />
@@ -416,6 +517,12 @@ export default function App() {
               setPreselectedCheckIn("");
               setViewBookingId("");
               navigateTo(returnTo);
+            }}
+            onCreateClient={(cabanaId, checkIn) => {
+              if (cabanaId) setPreselectedCabinId(cabanaId);
+              if (checkIn) setPreselectedCheckIn(checkIn);
+              setClientFormReturnTo("new-booking");
+              navigateTo("new-client");
             }}
             initialCabanaId={preselectedCabinId}
             initialCheckIn={preselectedCheckIn}
@@ -456,7 +563,7 @@ export default function App() {
             }`}
           >
             <Calendar className="w-4.5 h-4.5" />
-            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">Mensual</span>
+            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">planificador</span>
           </button>
 
           {/* Tab 3: Metrics */}
@@ -469,7 +576,7 @@ export default function App() {
             <span className="material-symbols-outlined text-lg">
               analytics
             </span>
-            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">Métricas</span>
+            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">GRAFICOS</span>
           </button>
 
           {/* Tab 4: Settings launcher */}
@@ -480,9 +587,9 @@ export default function App() {
             }`}
           >
             <span className="material-symbols-outlined text-lg">
-              settings
+              home
             </span>
-            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">Ajustes</span>
+            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">MENU PRINCIPAL</span>
           </button>
         </div>
       ) : (

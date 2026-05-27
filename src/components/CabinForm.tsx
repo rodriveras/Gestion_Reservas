@@ -9,11 +9,15 @@ import { ArrowLeft, Save, MapPin, Eye, Zap, Shield, Image as ImageIcon } from "l
 import { Cabana } from "../types";
 
 interface CabinFormProps {
+  cabanas?: Cabana[];
   onSave: (cabin: Cabana) => void;
   onBack: () => void;
 }
 
-export default function CabinForm({ onSave, onBack }: CabinFormProps) {
+export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormProps) {
+  const [isEditingState, setIsEditingState] = useState(false);
+  const [selectedCabinId, setSelectedCabinId] = useState("");
+
   const [nombre, setNombre] = useState("");
   const [tipo, setTipo] = useState<"Familiar" | "Suite" | "Domo" | "Bungalow">("Familiar");
   const [estado, setEstado] = useState<"Disponible" | "Mantenimiento" | "Ocupada">("Disponible");
@@ -27,14 +31,48 @@ export default function CabinForm({ onSave, onBack }: CabinFormProps) {
   const [imagenUrl, setImagenUrl] = useState("");
   const [coordenadas, setCoordenadas] = useState("-41.13, -71.30");
 
-  const autoId = `CAB-2026-${Math.floor(100 + Math.random() * 900)}`;
+  const [newCabinId] = useState(() => `CAB-2026-${Math.floor(100 + Math.random() * 900)}`);
+
+  const handleSelectCabinToEdit = (cabinId: string) => {
+    setSelectedCabinId(cabinId);
+    const cab = cabanas.find((c) => c.id === cabinId);
+    if (cab) {
+      setNombre(cab.nombre || "");
+      setTipo(cab.tipo || "Familiar");
+      setEstado(cab.estado || "Disponible");
+      setPrecioBase((cab.precioBase || 0).toString());
+      setDescripcion(cab.descripcion || "");
+      setSuperficie((cab.superficie || 45).toString());
+      setHabitaciones((cab.habitaciones || 2).toString());
+      setBanos((cab.banos || 1).toString());
+      setCamas((cab.camas || 3).toString());
+      setCapacidad((cab.capacidad || 4).toString());
+      setImagenUrl(cab.imagenUrl || "");
+      setCoordenadas(`${cab.lat || -41.13}, ${cab.lng || -71.30}`);
+    } else {
+      setNombre("");
+      setTipo("Familiar");
+      setEstado("Disponible");
+      setPrecioBase("");
+      setDescripcion("");
+      setSuperficie("45");
+      setHabitaciones("2");
+      setBanos("1");
+      setCamas("3");
+      setCapacidad("4");
+      setImagenUrl("");
+      setCoordenadas("-41.13, -71.30");
+    }
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!nombre.trim()) return;
 
+    const targetId = isEditingState && selectedCabinId ? selectedCabinId : newCabinId;
+
     const newCabin: Cabana = {
-      id: autoId,
+      id: targetId,
       nombre,
       tipo,
       estado,
@@ -50,7 +88,7 @@ export default function CabinForm({ onSave, onBack }: CabinFormProps) {
       lng: Number(coordenadas.split(",")[1]) || -71.305,
     };
 
-    alert("¡Cabaña guardada satisfactoriamente!");
+    alert(isEditingState ? "¡Cabaña actualizada satisfactoriamente!" : "¡Cabaña guardada satisfactoriamente!");
     onSave(newCabin);
     onBack();
   };
@@ -70,11 +108,54 @@ export default function CabinForm({ onSave, onBack }: CabinFormProps) {
           <ArrowLeft className="w-4 h-4" />
           Volver
         </button>
-        <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
-          Nueva Cabaña
-        </h2>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
+            {isEditingState ? "Editar Cabaña" : "Nueva Cabaña"}
+          </h2>
+          {cabanas && cabanas.length > 0 && (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditingState(!isEditingState);
+                  if (isEditingState) {
+                    handleSelectCabinToEdit("");
+                  }
+                }}
+                className={`flex items-center gap-2 px-4.5 py-2.5 text-xs font-sans font-extrabold rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg ${
+                  isEditingState
+                    ? "bg-[#1b1e1b] text-neutral-400 hover:text-white border border-neutral-800 hover:bg-neutral-800"
+                    : "bg-[#4a634e] text-white hover:bg-[#5b7a60] border border-[#b2ceb4]/40 shadow-emerald-950/40"
+                }`}
+              >
+                <span className="material-symbols-outlined text-sm">edit</span>
+                {isEditingState ? "Modo Nueva Cabaña" : "Editar Cabaña"}
+              </button>
+
+              {isEditingState && (
+                <div className="relative">
+                  <select
+                    value={selectedCabinId}
+                    onChange={(e) => handleSelectCabinToEdit(e.target.value)}
+                    className="pl-3 pr-8 py-2 bg-[#121412] text-xs font-medium text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg outline-none appearance-none cursor-pointer min-w-[200px]"
+                  >
+                    <option value="">-- Seleccione Cabaña --</option>
+                    {cabanas.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre} ({c.tipo})
+                      </option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none text-sm">
+                    expand_more
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         <p className="text-neutral-400 font-sans text-sm mt-1">
-          Configuración e información técnica de la nueva unidad.
+          {isEditingState ? "Modifica la información y tarifas de una cabaña existente." : "Configuración e información técnica de la nueva unidad."}
         </p>
       </div>
 
@@ -97,7 +178,7 @@ export default function CabinForm({ onSave, onBack }: CabinFormProps) {
                 </label>
                 <input
                   type="text"
-                  value={autoId}
+                  value={isEditingState && selectedCabinId ? selectedCabinId : newCabinId}
                   readOnly
                   className="w-full bg-[#121412] text-neutral-500 border border-neutral-800/80 rounded-lg p-3 text-sm font-semibold opacity-75 cursor-not-allowed"
                 />
@@ -195,59 +276,59 @@ export default function CabinForm({ onSave, onBack }: CabinFormProps) {
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              <div className="bg-[#121412] p-3 rounded-lg border border-neutral-800">
-                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase mb-1">
+              <div className="bg-[#121412] p-3 rounded-lg border border-neutral-800 text-center flex flex-col justify-between">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase mb-1 text-center">
                   Superficie (m²)
                 </label>
                 <input
                   type="number"
                   value={superficie}
                   onChange={(e) => setSuperficie(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 text-[#b2ceb4] font-bold text-sm focus:ring-0"
+                  className="w-full bg-transparent border-none p-0 text-[#b2ceb4] font-bold text-sm focus:ring-0 text-center"
                 />
               </div>
-              <div className="bg-[#121412] p-3 rounded-lg border border-neutral-800">
-                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase mb-1">
+              <div className="bg-[#121412] p-3 rounded-lg border border-neutral-800 text-center flex flex-col justify-between">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase mb-1 text-center">
                   Habitaciones
                 </label>
                 <input
                   type="number"
                   value={habitaciones}
                   onChange={(e) => setHabitaciones(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 text-[#b2ceb4] font-bold text-sm focus:ring-0"
+                  className="w-full bg-transparent border-none p-0 text-[#b2ceb4] font-bold text-sm focus:ring-0 text-center"
                 />
               </div>
-              <div className="bg-[#121412] p-3 rounded-lg border border-neutral-800">
-                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase mb-1">
+              <div className="bg-[#121412] p-3 rounded-lg border border-neutral-800 text-center flex flex-col justify-between">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase mb-1 text-center">
                   Baños
                 </label>
                 <input
                   type="number"
                   value={banos}
                   onChange={(e) => setBanos(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 text-[#b2ceb4] font-bold text-sm focus:ring-0"
+                  className="w-full bg-transparent border-none p-0 text-[#b2ceb4] font-bold text-sm focus:ring-0 text-center"
                 />
               </div>
-              <div className="bg-[#121412] p-3 rounded-lg border border-neutral-800">
-                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase mb-1">
+              <div className="bg-[#121412] p-3 rounded-lg border border-neutral-800 text-center flex flex-col justify-between">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase mb-1 text-center">
                   Camas
                 </label>
                 <input
                   type="number"
                   value={camas}
                   onChange={(e) => setCamas(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 text-[#b2ceb4] font-bold text-sm focus:ring-0"
+                  className="w-full bg-transparent border-none p-0 text-[#b2ceb4] font-bold text-sm focus:ring-0 text-center"
                 />
               </div>
-              <div className="bg-[#121412] p-3 rounded-lg border border-neutral-800 col-span-2 md:col-span-1">
-                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase mb-1">
+              <div className="bg-[#121412] p-3 rounded-lg border border-neutral-800 col-span-2 md:col-span-1 text-center flex flex-col justify-between">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase mb-1 text-center">
                   Capacidad máx
                 </label>
                 <input
                   type="number"
                   value={capacidad}
                   onChange={(e) => setCapacidad(e.target.value)}
-                  className="w-full bg-transparent border-none p-0 text-[#b2ceb4] font-bold text-sm focus:ring-0"
+                  className="w-full bg-transparent border-none p-0 text-[#b2ceb4] font-bold text-sm focus:ring-0 text-center"
                 />
               </div>
             </div>
@@ -301,18 +382,37 @@ export default function CabinForm({ onSave, onBack }: CabinFormProps) {
               </h3>
             </div>
 
-            <div className="relative overflow-hidden rounded-lg h-36 border border-neutral-800 bg-[#121412]">
-              <img
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDspbPtfjOiXaRBkzV6wbPJ0savthgyb-W5sYBoK4jUPj-B2CN0SPJGjIaKaJqMv5tKNpz5ZVH57al3oTkheFn9dBhZrjurb66ms0CoURo8Ogla7xr22tubZl6slG_g7I1UxX2Ircu4SMY5tsWws6ZZTwAGp0KdxKGpXETVYdqNXRXToAmx7o17RkzC_TJ7UGf7uPWxI3cRcmgmkAqc7HKIT7YJ9AMPvIA9fLG1BpmvEtRmK2ubsPfisJyL2XvWtZnbVfiux0qQAzq3"
-                alt="Map coordinate layout background"
-                className="w-full h-full object-cover opacity-80"
-              />
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="w-8 h-8 rounded-full bg-[#4a634e]/90 text-white flex items-center justify-center shadow-lg border border-[#b2ceb4]/40 animate-pulse">
-                  <MapPin className="w-4 h-4" />
+            {(() => {
+              const latVal = Number(coordenadas.split(",")[0]);
+              const lngVal = Number(coordenadas.split(",")[1]);
+              const isValid = !isNaN(latVal) && !isNaN(lngVal);
+              const lat = isValid ? latVal : -36.9157;
+              const lng = isValid ? lngVal : -71.5010;
+
+              return (
+                <div className="relative overflow-hidden rounded-lg h-44 border border-neutral-800 bg-[#121412]">
+                  {isValid ? (
+                    <iframe
+                      width="100%"
+                      height="100%"
+                      frameBorder="0"
+                      scrolling="no"
+                      marginHeight={0}
+                      marginWidth={0}
+                      src={`https://maps.google.com/maps?q=${lat}%2C${lng}&t=k&z=17&output=embed`}
+                      className="w-full h-full opacity-90 rounded-lg shadow-inner"
+                      style={{ border: 0 }}
+                      title="Cabin Google Satellite Map Preview"
+                    ></iframe>
+                  ) : (
+                    <div className="w-full h-full flex flex-col items-center justify-center text-neutral-500 text-xs p-4 text-center">
+                      <span className="material-symbols-outlined text-3xl mb-1 text-[#f6bb89]">map</span>
+                      Escriba coordenadas válidas para previsualizar el mapa
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
+              );
+            })()}
 
             <div>
               <label className="block text-xs font-sans font-bold text-neutral-400 uppercase mb-1.5">

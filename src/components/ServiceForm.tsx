@@ -9,26 +9,52 @@ import { ArrowLeft, Save, Plus, ShieldAlert, Award } from "lucide-react";
 import { Servicio } from "../types";
 
 interface ServiceFormProps {
+  servicios?: Servicio[];
   onSave: (service: Servicio) => void;
   onBack: () => void;
 }
 
-export default function ServiceForm({ onSave, onBack }: ServiceFormProps) {
+export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceFormProps) {
+  const [isEditingState, setIsEditingState] = useState(false);
+  const [selectedServiceId, setSelectedServiceId] = useState("");
+
   const [nombre, setNombre] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [precio, setPrecio] = useState("");
   const [tipoCobro, setTipoCobro] = useState<"Por persona" | "Por día" | "Pago único">("Por persona");
   const [tipoPago, setTipoPago] = useState<"Transferencia" | "Efectivo" | "Tarjeta">("Transferencia");
-  const [estado, setEstado] = useState<"Borrador" | "Activo">("Borrador");
+  const [estado, setEstado] = useState<"Borrador" | "Activo" | "Mantenimiento">("Activo");
 
-  const autoId = String(Math.floor(10 + Math.random() * 90));
+  const [newServiceId] = useState(() => String(Math.floor(10 + Math.random() * 90)));
+
+  const targetId = isEditingState && selectedServiceId ? selectedServiceId : newServiceId;
+
+  const handleSelectServiceToEdit = (serviceId: string) => {
+    setSelectedServiceId(serviceId);
+    const serv = servicios.find((s) => s.id === serviceId);
+    if (serv) {
+      setNombre(serv.nombre || "");
+      setDescripcion(serv.descripcion || "");
+      setPrecio((serv.precio || 0).toString());
+      setTipoCobro(serv.tipoCobro || "Por persona");
+      setTipoPago(serv.tipoPago || "Transferencia");
+      setEstado(serv.estado || "Activo");
+    } else {
+      setNombre("");
+      setDescripcion("");
+      setPrecio("");
+      setTipoCobro("Por persona");
+      setTipoPago("Transferencia");
+      setEstado("Activo");
+    }
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!nombre.trim()) return;
 
     const newService: Servicio = {
-      id: autoId,
+      id: targetId,
       nombre,
       descripcion: descripcion || "Servicio premium complementario para su estancia.",
       precio: Number(precio) || 0.00,
@@ -37,7 +63,7 @@ export default function ServiceForm({ onSave, onBack }: ServiceFormProps) {
       estado,
     };
 
-    alert("¡Servicio guardado satisfactoriamente!");
+    alert(isEditingState ? "¡Servicio actualizado satisfactoriamente!" : "¡Servicio guardado satisfactoriamente!");
     onSave(newService);
     onBack();
   };
@@ -58,12 +84,52 @@ export default function ServiceForm({ onSave, onBack }: ServiceFormProps) {
             <ArrowLeft className="w-4 h-4" />
             Volver
           </button>
-          <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
-            Nuevo Servicio
-          </h2>
-          <p className="text-neutral-400 font-sans text-sm mt-1">
-            Configure servicios adicionales para mejorar la estadía de sus clientes.
-          </p>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+            <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
+              {isEditingState ? "Editar Servicio" : "Nuevo Servicio"}
+            </h2>
+            {servicios && servicios.length > 0 && (
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsEditingState(!isEditingState);
+                    if (isEditingState) {
+                      handleSelectServiceToEdit("");
+                    }
+                  }}
+                  className={`flex items-center gap-2 px-4.5 py-2.5 text-xs font-sans font-extrabold rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg ${
+                    isEditingState
+                      ? "bg-[#1b1e1b] text-neutral-400 hover:text-white border border-neutral-800 hover:bg-neutral-800"
+                      : "bg-[#4a634e] text-white hover:bg-[#5b7a60] border border-[#b2ceb4]/40 shadow-emerald-950/40"
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-sm">edit</span>
+                  {isEditingState ? "Modo Nuevo Servicio" : "Editar Servicio"}
+                </button>
+
+                {isEditingState && (
+                  <div className="relative">
+                    <select
+                      value={selectedServiceId}
+                      onChange={(e) => handleSelectServiceToEdit(e.target.value)}
+                      className="pl-3 pr-8 py-2 bg-[#121412] text-xs font-medium text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg outline-none appearance-none cursor-pointer min-w-[200px]"
+                    >
+                      <option value="">-- Seleccione Servicio --</option>
+                      {servicios.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.nombre} (${s.precio})
+                        </option>
+                      ))}
+                    </select>
+                    <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none text-sm">
+                      expand_more
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* State Tag badge */}
@@ -78,8 +144,8 @@ export default function ServiceForm({ onSave, onBack }: ServiceFormProps) {
       </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-20">
-        {/* Left Inputs- 8 columns */}
-        <div className="lg:col-span-8">
+        {/* Left Inputs- 12 columns */}
+        <div className="lg:col-span-12">
           <div className="bg-[#1b1e1b] border-t-2 border-[#D29B6C] border-x border-b border-neutral-800/40 rounded-xl p-6 md:p-8 shadow-xl space-y-6 relative overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
               {/* ID de Servicio */}
@@ -88,7 +154,7 @@ export default function ServiceForm({ onSave, onBack }: ServiceFormProps) {
                   ID de Servicio
                 </label>
                 <div className="bg-[#121412] border border-neutral-800/80 p-3.5 rounded-lg flex items-center justify-between">
-                  <span className="font-headline text-lg font-semibold text-[#f6bb89]">{autoId}</span>
+                  <span className="font-headline text-lg font-semibold text-[#f6bb89]">{targetId}</span>
                   <span className="material-symbols-outlined text-neutral-600 text-sm">lock</span>
                 </div>
                 <p className="text-[10px] text-neutral-500 mt-1.5">Generado automáticamente por el sistema</p>
@@ -194,33 +260,19 @@ export default function ServiceForm({ onSave, onBack }: ServiceFormProps) {
                 <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
                   Estado al Guardar
                 </label>
-                <div className="flex gap-4">
-                  <label className="flex-1 bg-[#121412] p-3 rounded-lg border border-neutral-850 flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="estado"
-                      checked={estado === "Borrador"}
-                      onChange={() => setEstado("Borrador")}
-                      className="text-[#4a634e] focus:ring-0"
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-neutral-300">Borrador</span>
-                      <span className="text-[10px] text-neutral-500">Módulo inactivo para huéspedes</span>
-                    </div>
-                  </label>
-                  <label className="flex-1 bg-[#121412] p-3 rounded-lg border border-neutral-850 flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="estado"
-                      checked={estado === "Activo"}
-                      onChange={() => setEstado("Activo")}
-                      className="text-[#4a634e] focus:ring-0"
-                    />
-                    <div className="flex flex-col">
-                      <span className="text-xs font-bold text-neutral-300">Activo</span>
-                      <span className="text-[10px] text-neutral-400">Visible y contratable en el lodge</span>
-                    </div>
-                  </label>
+                <div className="relative">
+                  <select
+                    value={estado}
+                    onChange={(e) => setEstado(e.target.value as any)}
+                    className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3.5 pr-10 text-sm outline-none appearance-none cursor-pointer"
+                  >
+                    <option value="Activo">Activo</option>
+                    <option value="Borrador">Inactivo</option>
+                    <option value="Mantenimiento">Mantención</option>
+                  </select>
+                  <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-[#b2ceb4]">
+                    expand_more
+                  </span>
                 </div>
               </div>
             </div>
@@ -243,22 +295,6 @@ export default function ServiceForm({ onSave, onBack }: ServiceFormProps) {
                 Cancelar
               </button>
             </div>
-          </div>
-        </div>
-
-        {/* Right side - Guideline card */}
-        <div className="lg:col-span-4 space-y-6">
-          <div className="bg-[#1b1e1b] rounded-xl p-5 border border-neutral-800 shadow-md">
-            <div className="flex items-center gap-2 mb-3 text-[#f6bb89] pb-2 border-b border-neutral-900">
-              <Award className="w-4 h-4" />
-              <h4 className="text-xs font-sans font-bold uppercase tracking-wide text-neutral-100">
-                Pautas del Servicio
-              </h4>
-            </div>
-            <p className="text-xs text-neutral-400 font-sans leading-relaxed">
-              Los nuevos servicios se asignan automáticamente bajo la clasificación seleccionada. 
-              Configure valores reales para asegurar cálculos precisos en la sección de facturación de reservas contratas.
-            </p>
           </div>
         </div>
       </form>
