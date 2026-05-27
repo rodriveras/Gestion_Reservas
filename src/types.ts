@@ -89,3 +89,8 @@ export const INITIAL_SERVICIOS: Servicio[] = [];
 export const INITIAL_RESERVAS: Reserva[] = [];
 
 export const INITIAL_CONTRATACIONES: ContratacionServicio[] = [];
+
+export interface Administracion {
+  Nombre_complejo: string;
+}
+

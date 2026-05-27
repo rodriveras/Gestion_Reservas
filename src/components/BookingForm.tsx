@@ -63,7 +63,7 @@ export default function BookingForm({
   
   const [canalVentas, setCanalVentas] = useState<Reserva["canalVentas"]>(() => existingBooking?.canalVentas || "Directo");
   const [montoTotal, setMontoTotal] = useState(() => existingBooking?.montoTotal ? existingBooking.montoTotal.toString() : "");
-  const [montoAnticipo, setMontoAnticipo] = useState(() => existingBooking?.montoAnticipo ? existingBooking.montoAnticipo.toString() : "");
+  const [montoAnticipo, setMontoAnticipo] = useState(() => existingBooking?.montoAnticipo ? existingBooking.montoAnticipo.toString() : "0");
   const [estadoReserva, setEstadoReserva] = useState<Reserva["estadoReserva"]>(() => existingBooking?.estadoReserva || "Pendiente de Pago");
   const [metodoPago, setMetodoPago] = useState<Reserva["metodoPago"]>(() => existingBooking?.metodoPago || "Transferencia");
 
@@ -177,8 +177,12 @@ export default function BookingForm({
       if (cabana) {
         const calculatedTotal = cabana.precioBase * noches;
         setMontoTotal(calculatedTotal.toString());
-        // set default deposit to 30% of total
-        setMontoAnticipo(Math.round(calculatedTotal * 0.3).toString());
+        // set default deposit to 30% of total only for existing booking changes, otherwise default to "0" for new bookings
+        if (!existingBooking) {
+          setMontoAnticipo("0");
+        } else {
+          setMontoAnticipo(Math.round(calculatedTotal * 0.3).toString());
+        }
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -789,7 +793,7 @@ export default function BookingForm({
                   Duración total:{" "}
                 </span>
                 <span className="ml-2 font-bold font-sans text-xs text-[#b2ceb4]">
-                  {noches} Días
+                  {noches} Días y {noches} Noches
                 </span>
               </div>
 

@@ -27,7 +27,8 @@ const TABLAS = {
   clientes: ["id", "tipoDocumento", "numeroDocumento", "nacionalidad", "ciudadOrigen", "nombre", "apellido", "email", "telefono", "fechaNacimiento", "estado", "redSocial", "redSocialUser", "notas", "fechaRegistro"],
   servicios: ["id", "nombre", "descripcion", "precio", "tipoCobro", "tipoPago", "estado"],
   reservas: ["id", "clienteId", "cabanaId", "fechaReserva", "checkIn", "checkOut", "noches", "cantidadPersonas", "canalVentas", "montoTotal", "montoAnticipo", "estadoReserva", "metodoPago"],
-  contrataciones: ["id", "reservaId", "clienteId", "servicioId", "fecha", "precioPactado", "cantidad", "subtotal", "estadoPago", "medioPago"]
+  contrataciones: ["id", "reservaId", "clienteId", "servicioId", "fecha", "precioPactado", "cantidad", "subtotal", "estadoPago", "medioPago"],
+  administracion: ["Nombre_complejo"]
 };
 
 // Datos semilla iniciales para poblar la hoja de cálculo al inicializar
@@ -57,6 +58,9 @@ const SEED_DATA = {
   contrataciones: [
     ["CON-01", "RES-77824", "CLI-77824", "01", "2024-06-13", 35, 3, 105, "Pagado", "Efectivo"],
     ["CON-02", "RES-77824", "CLI-77824", "02", "2024-06-12", 15, 3, 45, "Pendiente", "Transferencia"]
+  ],
+  administracion: [
+    ["ENTRE NIEVES"]
   ]
 };
 

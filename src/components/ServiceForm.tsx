@@ -84,63 +84,53 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
             <ArrowLeft className="w-4 h-4" />
             Volver
           </button>
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-            <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
-              {isEditingState ? "Editar Servicio" : "Nuevo Servicio"}
-            </h2>
-            {servicios && servicios.length > 0 && (
-              <div className="flex items-center gap-3">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsEditingState(!isEditingState);
-                    if (isEditingState) {
-                      handleSelectServiceToEdit("");
-                    }
-                  }}
-                  className={`flex items-center gap-2 px-4.5 py-2.5 text-xs font-sans font-extrabold rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg ${
-                    isEditingState
-                      ? "bg-[#1b1e1b] text-neutral-400 hover:text-white border border-neutral-800 hover:bg-neutral-800"
-                      : "bg-[#4a634e] text-white hover:bg-[#5b7a60] border border-[#b2ceb4]/40 shadow-emerald-950/40"
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-sm">edit</span>
-                  {isEditingState ? "Modo Nuevo Servicio" : "Editar Servicio"}
-                </button>
+          <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
+            {isEditingState ? "Editar Servicio" : "Nuevo Servicio"}
+          </h2>
+        </div>
 
-                {isEditingState && (
-                  <div className="relative">
-                    <select
-                      value={selectedServiceId}
-                      onChange={(e) => handleSelectServiceToEdit(e.target.value)}
-                      className="pl-3 pr-8 py-2 bg-[#121412] text-xs font-medium text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg outline-none appearance-none cursor-pointer min-w-[200px]"
-                    >
-                      <option value="">-- Seleccione Servicio --</option>
-                      {servicios.map((s) => (
-                        <option key={s.id} value={s.id}>
-                          {s.nombre} (${s.precio})
-                        </option>
-                      ))}
-                    </select>
-                    <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none text-sm">
-                      expand_more
-                    </span>
-                  </div>
-                )}
+        {/* Edit Service button and selector moved to the right */}
+        {servicios && servicios.length > 0 && (
+          <div className="flex items-center gap-3 self-start md:self-auto">
+            <button
+              type="button"
+              onClick={() => {
+                setIsEditingState(!isEditingState);
+                if (isEditingState) {
+                  handleSelectServiceToEdit("");
+                }
+              }}
+              className={`flex items-center gap-2 px-4.5 py-2.5 text-xs font-sans font-extrabold rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg ${
+                isEditingState
+                  ? "bg-[#1b1e1b] text-neutral-400 hover:text-white border border-neutral-800 hover:bg-neutral-800"
+                  : "bg-[#4a634e] text-white hover:bg-[#5b7a60] border border-[#b2ceb4]/40 shadow-emerald-950/40"
+              }`}
+            >
+              <span className="material-symbols-outlined text-sm">edit</span>
+              {isEditingState ? "Modo Nuevo Servicio" : "Editar Servicio"}
+            </button>
+
+            {isEditingState && (
+              <div className="relative">
+                <select
+                  value={selectedServiceId}
+                  onChange={(e) => handleSelectServiceToEdit(e.target.value)}
+                  className="pl-3 pr-8 py-2 bg-[#121412] text-xs font-medium text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg outline-none appearance-none cursor-pointer min-w-[200px]"
+                >
+                  <option value="">-- Seleccione Servicio --</option>
+                  {servicios.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nombre} (${s.precio})
+                    </option>
+                  ))}
+                </select>
+                <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none text-sm">
+                  expand_more
+                </span>
               </div>
             )}
           </div>
-        </div>
-
-        {/* State Tag badge */}
-        <div className="bg-[#1b1e1b] border border-neutral-800 px-4 py-2 rounded-xl flex items-center gap-3 self-start md:self-auto">
-          <span className="text-[10px] font-sans font-bold text-[#f6bb89] uppercase tracking-wider">
-            ESTADO:
-          </span>
-          <span className="bg-[#4a634e]/30 text-[#b2ceb4] px-2.5 py-0.5 rounded-full text-xs font-bold uppercase">
-            {estado}
-          </span>
-        </div>
+        )}
       </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-20">

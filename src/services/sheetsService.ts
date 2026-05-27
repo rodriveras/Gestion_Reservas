@@ -1,4 +1,4 @@
-import { Cabana, Cliente, Servicio, Reserva, ContratacionServicio } from "../types";
+import { Cabana, Cliente, Servicio, Reserva, ContratacionServicio, Administracion } from "../types";
 
 const API_URL = (import.meta as any).env.VITE_GOOGLE_SHEETS_API_URL || "";
 
@@ -8,6 +8,7 @@ export interface DatabaseState {
   servicios: Servicio[];
   reservas: Reserva[];
   contrataciones: ContratacionServicio[];
+  administracion?: Administracion[];
 }
 
 /**
@@ -145,6 +146,7 @@ export const sheetsService = {
       const servicios = localStorage.getItem("entre_nieves_servicios");
       const reservas = localStorage.getItem("entre_nieves_reservas");
       const contrataciones = localStorage.getItem("entre_nieves_contrataciones");
+      const administracion = localStorage.getItem("entre_nieves_administracion");
 
       return {
         cabanas: cabanas ? JSON.parse(cabanas) : fallbackData.cabanas,
@@ -152,6 +154,7 @@ export const sheetsService = {
         servicios: servicios ? JSON.parse(servicios) : fallbackData.servicios,
         reservas: reservas ? JSON.parse(reservas) : fallbackData.reservas,
         contrataciones: contrataciones ? JSON.parse(contrataciones) : fallbackData.contrataciones,
+        administracion: administracion ? JSON.parse(administracion) : fallbackData.administracion,
       };
     } catch {
       return fallbackData;
@@ -165,6 +168,9 @@ export const sheetsService = {
       localStorage.setItem("entre_nieves_servicios", JSON.stringify(data.servicios));
       localStorage.setItem("entre_nieves_reservas", JSON.stringify(data.reservas));
       localStorage.setItem("entre_nieves_contrataciones", JSON.stringify(data.contrataciones));
+      if (data.administracion) {
+        localStorage.setItem("entre_nieves_administracion", JSON.stringify(data.administracion));
+      }
     } catch (e) {
       console.error("Error guardando en caché local:", e);
     }

@@ -24,7 +24,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
   const [fecha, setFecha] = useState(() => new Date().toISOString().split("T")[0]);
   const [precioPactado, setPrecioPactado] = useState("");
   const [cantidad, setCantidad] = useState("1");
-  const [estadoPago, setEstadoPago] = useState<"Pendiente" | "Parcial" | "Pagado">("Pendiente");
+  const [estadoPago, setEstadoPago] = useState<"Pendiente" | "Pagado">("Pendiente");
   const [medioPago, setMedioPago] = useState<"Transferencia" | "Efectivo" | "Tarjeta">("Transferencia");
 
   // Service validation state
@@ -335,8 +335,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
                   onChange={(e) => setEstadoPago(e.target.value as any)}
                   className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs outline-none appearance-none"
                 >
-                  <option value="Pendiente">Pendiente</option>
-                  <option value="Parcial">Parcial</option>
+                  <option value="Pendiente">Pendiente de Pago</option>
                   <option value="Pagado">Pagado</option>
                 </select>
                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">

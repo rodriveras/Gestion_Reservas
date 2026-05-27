@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, ArrowRight, ArrowLeftRight, Users, Moon, Sparkles, ShieldAlert } from "lucide-react";
-import { Cabana, Reserva, Cliente } from "../types";
+import { Cabana, Reserva, Cliente, Servicio, ContratacionServicio } from "../types";
 
 // Helper to parse dates in local timezone to avoid UTC shifting bugs
 const parseLocalDate = (dateStr: string) => {
@@ -19,11 +19,21 @@ interface CalendarViewProps {
   cabanas: Cabana[];
   reservas: Reserva[];
   clientes: Cliente[];
+  servicios?: Servicio[];
+  contrataciones?: ContratacionServicio[];
   onBack: () => void;
   onNavigate?: (screen: string, cabinId?: string, checkIn?: string, viewBookingId?: string) => void;
 }
 
-export default function CalendarView({ cabanas, reservas, clientes, onBack, onNavigate }: CalendarViewProps) {
+export default function CalendarView({
+  cabanas,
+  reservas,
+  clientes,
+  servicios = [],
+  contrataciones = [],
+  onBack,
+  onNavigate,
+}: CalendarViewProps) {
   const [selectedCabanaId, setSelectedCabanaId] = useState<string>("all");
   const [currentDate, setCurrentDate] = useState<Date>(() => {
     const today = new Date();
@@ -54,6 +64,21 @@ export default function CalendarView({ cabanas, reservas, clientes, onBack, onNa
         ? "Fecha Inválida" 
         : rawDate.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
 
+      // Find services contracted for this reservation
+      const bookingServices = contrataciones.filter((c) => c.reservaId === r.id);
+      const servicesTotal = bookingServices.reduce((sum, c) => sum + (c.subtotal || 0), 0);
+      const deposit = r.montoAnticipo || 0;
+      const balance = (r.montoTotal || 0) + servicesTotal - deposit;
+
+      const servicesWithNames = bookingServices.map((c) => {
+        const srv = servicios.find((s) => s.id === c.servicioId);
+        return {
+          id: c.id,
+          nombre: srv ? srv.nombre : "Servicio",
+          cantidad: c.cantidad,
+        };
+      });
+
       return {
         id: r.id,
         guestName: `${client.nombre} ${client.apellido}`,
@@ -63,6 +88,10 @@ export default function CalendarView({ cabanas, reservas, clientes, onBack, onNa
         passengers: r.cantidadPersonas || 0,
         nights: r.noches || 0,
         rawCheckIn: r.checkIn,
+        deposit,
+        servicesTotal,
+        balance,
+        services: servicesWithNames,
       };
     })
     .sort((a, b) => {
@@ -569,6 +598,43 @@ export default function CalendarView({ cabanas, reservas, clientes, onBack, onNa
                     <div className="flex items-center gap-1">
                       <Moon className="w-3.5 h-3.5 text-neutral-600" />
                       <span>{arr.nights} Noches</span>
+                    </div>
+                  </div>
+
+                  {/* Contracted services inline list */}
+                  {arr.services && arr.services.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-neutral-900/40 space-y-1">
+                      <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase tracking-wider block">Servicios contratados:</span>
+                      <div className="flex flex-wrap gap-1">
+                        {arr.services.map((srv: any) => (
+                          <span key={srv.id} className="bg-[#4a634e]/10 text-[#b2ceb4] border border-[#4a634e]/30 px-1.5 py-0.5 rounded text-[9px] font-semibold">
+                            {srv.nombre} (x{srv.cantidad})
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Financial Breakdown / Balance */}
+                  <div className="mt-2.5 pt-2.5 border-t border-neutral-900/60 grid grid-cols-2 gap-1.5 text-[10px] bg-[#121412]/50 p-2 rounded-lg border border-neutral-900/30">
+                    <div className="flex justify-between col-span-2 text-[9px] text-neutral-500 font-bold uppercase tracking-wider border-b border-neutral-900/40 pb-0.5 mb-0.5">
+                      <span>Detalle de Cuenta</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[8px] text-neutral-500 uppercase font-sans font-semibold">Total Cabaña</span>
+                      <span className="text-xs font-headline font-semibold text-neutral-300">{formatCurrency(arr.price)}</span>
+                    </div>
+                    <div className="flex flex-col text-right">
+                      <span className="text-[8px] text-neutral-500 uppercase font-sans font-semibold">Servicios</span>
+                      <span className="text-xs font-headline font-semibold text-[#b2ceb4]">{formatCurrency(arr.servicesTotal)}</span>
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[8px] text-neutral-500 uppercase font-sans font-semibold">Anticipo</span>
+                      <span className="text-xs font-headline font-semibold text-neutral-400">{formatCurrency(arr.deposit)}</span>
+                    </div>
+                    <div className="flex flex-col text-right">
+                      <span className="text-[8px] text-[#f6bb89] uppercase font-sans font-bold">Saldo x Pagar</span>
+                      <span className="text-xs font-headline font-bold text-[#f6bb89]">{formatCurrency(arr.balance)}</span>
                     </div>
                   </div>
                 </div>

@@ -13,6 +13,7 @@ import {
   Servicio,
   Reserva,
   ContratacionServicio,
+  Administracion,
   INITIAL_CABANAS,
   INITIAL_CLIENTES,
   INITIAL_SERVICIOS,
@@ -100,6 +101,11 @@ export default function App() {
     return list;
   });
 
+  const [administracion, setAdministracion] = useState<Administracion[]>(() => {
+    const saved = localStorage.getItem("entre_nieves_administracion");
+    return saved ? JSON.parse(saved) : [{ Nombre_complejo: "ENTRE NIEVES" }];
+  });
+
   // --- Google Sheets Integration State Engine ---
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [syncStatus, setSyncStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -142,6 +148,10 @@ export default function App() {
     localStorage.setItem("entre_nieves_contrataciones", JSON.stringify(contrataciones));
   }, [contrataciones]);
 
+  useEffect(() => {
+    localStorage.setItem("entre_nieves_administracion", JSON.stringify(administracion));
+  }, [administracion]);
+
   // Carga inicial asíncrona desde la nube (Google Sheets)
   useEffect(() => {
     async function loadCloudData() {
@@ -156,6 +166,7 @@ export default function App() {
         servicios: INITIAL_SERVICIOS,
         reservas: INITIAL_RESERVAS,
         contrataciones: INITIAL_CONTRATACIONES,
+        administracion: [{ Nombre_complejo: "ENTRE NIEVES" }]
       };
 
       try {
@@ -165,6 +176,9 @@ export default function App() {
         setServicios(cloudData.servicios);
         setReservas(cloudData.reservas);
         setContrataciones(cloudData.contrataciones);
+        if (cloudData.administracion && cloudData.administracion.length > 0) {
+          setAdministracion(cloudData.administracion);
+        }
         setSyncStatus("success");
         setSheetsActive(true);
       } catch (err) {
@@ -361,7 +375,7 @@ export default function App() {
             <Trees className="w-4 h-4 text-[#b2ceb4]" />
           </div>
           <h1 className="font-sans text-xl font-bold tracking-tighter text-white italic uppercase flex items-center gap-1.5 selection:bg-transparent">
-            <span>ENTRE NIEVES</span>
+            <span>{administracion[0]?.Nombre_complejo || "ENTRE NIEVES"}</span>
             {currentScreen !== "admin" && (
               <span className="hidden sm:flex items-center text-xs font-sans text-[#f6bb89]/80 uppercase not-italic tracking-widest pl-1 font-bold">
                 <ChevronRight className="w-3.5 h-3.5 text-neutral-600 inline mr-1" />
@@ -427,7 +441,7 @@ export default function App() {
       </header>
 
       {/* Main Content Render Layout */}
-      <main className="relative z-10 flex-grow w-full max-w-container-max mx-auto px-6 py-8 pb-20">
+      <main className="relative z-10 flex-grow w-full max-w-container-max mx-auto px-3 xs:px-4 md:px-6 py-2 xs:py-4 md:py-8 pb-20">
         {currentScreen === "admin" && (
           <AdminLauncher
             onNavigate={(screen) => navigateTo(screen)}
@@ -443,6 +457,8 @@ export default function App() {
             cabanas={cabanas}
             reservas={reservas}
             clientes={clientes}
+            servicios={servicios}
+            contrataciones={contrataciones}
             onBack={() => navigateTo("admin")}
             onNavigate={(screen, cabinId, checkIn, viewBookingId) => {
               if (cabinId) setPreselectedCabinId(cabinId);
