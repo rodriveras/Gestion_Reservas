@@ -158,10 +158,9 @@ function doPost(e) {
     let requestData = JSON.parse(e.postData.contents);
     let action = requestData.action;
     let sheetName = requestData.sheet;
-    let itemData = requestData.data;
     
-    if (action !== "upsert" || !TABLAS[sheetName] || !itemData || !itemData.id) {
-      throw new Error("Petición inválida. Se requiere 'action: upsert', 'sheet' válido, datos e 'id'.");
+    if (!TABLAS[sheetName]) {
+      throw new Error("La pestaña especificada no es válida.");
     }
     
     let ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -170,42 +169,72 @@ function doPost(e) {
       throw new Error("La pestaña especificada no existe.");
     }
     
-    let headers = TABLAS[sheetName];
-    let dataRange = sheet.getDataRange();
-    let rows = dataRange.getValues();
-    
-    // Mapear el objeto JSON a una fila en base al orden de las columnas/headers
-    let newRowValues = headers.map(header => {
-      let val = itemData[header];
-      if (val === undefined || val === null) {
-        return "";
+    if (action === "delete") {
+      let itemId = requestData.id;
+      if (!itemId) {
+        throw new Error("Petición inválida de eliminación. Se requiere 'id'.");
       }
-      return val;
-    });
-    
-    let targetRowIndex = -1;
-    
-    // Buscar si existe un registro previo con el mismo ID (columna A es siempre "id")
-    for (let i = 1; i < rows.length; i++) {
-      if (rows[i][0].toString() === itemData.id.toString()) {
-        targetRowIndex = i + 1; // 1-indexed para getRange
-        break;
-      }
-    }
-    
-    if (targetRowIndex !== -1) {
-      // ACTUALIZAR (Reemplazar la fila existente)
-      sheet.getRange(targetRowIndex, 1, 1, headers.length).setValues([newRowValues]);
-      Logger.log("Fila actualizada en " + sheetName + " en el índice " + targetRowIndex);
-    } else {
-      // CREAR (Añadir una nueva fila al final)
-      sheet.appendRow(newRowValues);
-      Logger.log("Nueva fila insertada en " + sheetName);
-    }
-    
-    return ContentService.createTextOutput(JSON.stringify({ success: true, id: itemData.id }))
-      .setMimeType(ContentService.MimeType.JSON);
       
+      let rows = sheet.getDataRange().getValues();
+      let targetRowIndex = -1;
+      
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][0].toString() === itemId.toString()) {
+          targetRowIndex = i + 1; // 1-indexed para getRange/deleteRow
+          break;
+        }
+      }
+      
+      if (targetRowIndex !== -1) {
+        sheet.deleteRow(targetRowIndex);
+        return ContentService.createTextOutput(JSON.stringify({ success: true, action: "delete", id: itemId }))
+          .setMimeType(ContentService.MimeType.JSON);
+      } else {
+        return ContentService.createTextOutput(JSON.stringify({ success: false, error: "Registro no encontrado" }))
+          .setMimeType(ContentService.MimeType.JSON);
+      }
+    } else if (action === "upsert") {
+      let itemData = requestData.data;
+      if (!itemData || !itemData.id) {
+        throw new Error("Petición inválida. Se requiere datos e 'id' para upsert.");
+      }
+      
+      let headers = TABLAS[sheetName];
+      let rows = sheet.getDataRange().getValues();
+      
+      // Mapear el objeto JSON a una fila en base al orden de las columnas/headers
+      let newRowValues = headers.map(header => {
+        let val = itemData[header];
+        if (val === undefined || val === null) {
+          return "";
+        }
+        return val;
+      });
+      
+      let targetRowIndex = -1;
+      
+      // Buscar si existe un registro previo con el mismo ID
+      for (let i = 1; i < rows.length; i++) {
+        if (rows[i][0].toString() === itemData.id.toString()) {
+          targetRowIndex = i + 1;
+          break;
+        }
+      }
+      
+      if (targetRowIndex !== -1) {
+        // ACTUALIZAR (Reemplazar la fila existente)
+        sheet.getRange(targetRowIndex, 1, 1, headers.length).setValues([newRowValues]);
+      } else {
+        // CREAR (Añadir una nueva fila al final)
+        sheet.appendRow(newRowValues);
+      }
+      
+      return ContentService.createTextOutput(JSON.stringify({ success: true, id: itemData.id }))
+        .setMimeType(ContentService.MimeType.JSON);
+    } else {
+      throw new Error("Acción no soportada.");
+    }
+    
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({ success: false, error: err.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
