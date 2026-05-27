@@ -8,6 +8,13 @@ import { motion } from "motion/react";
 import { DollarSign, Percent, Moon, CalendarDays, ArrowLeft, PieChart, BarChart3, TrendingUp } from "lucide-react";
 import { Cabana, Reserva, ContratacionServicio, Cliente } from "../types";
 
+// Helper to parse dates in local timezone to avoid UTC shifting bugs
+const parseLocalDate = (dateStr: string) => {
+  if (!dateStr) return new Date(NaN);
+  const normalized = dateStr.includes("T") ? dateStr : `${dateStr}T00:00:00`;
+  return new Date(normalized);
+};
+
 interface DashboardProps {
   cabanas: Cabana[];
   reservas: Reserva[];
@@ -17,28 +24,37 @@ interface DashboardProps {
 }
 
 export default function Dashboard({ cabanas, reservas, contrataciones, clientes, onBack }: DashboardProps) {
+  // Defensive copies to avoid null-reference crashes
+  const safeCabanas = cabanas || [];
+  const safeReservas = reservas || [];
+  const safeClientes = clientes || [];
+  const safeContrataciones = contrataciones || [];
+
+  const [selectedCabinSegment, setSelectedCabinSegment] = useState<string | null>(null);
+  const [selectedChannelSegment, setSelectedChannelSegment] = useState<string | null>(null);
+
   // 1. Calculate stats dynamically
-  const totalBoringIncomes = reservas.reduce((acc, r) => acc + r.montoTotal, 0);
-  const totalServiceIncomes = contrataciones.reduce((acc, c) => acc + c.subtotal, 0);
+  const totalBoringIncomes = safeReservas.reduce((acc, r) => acc + r.montoTotal, 0);
+  const totalServiceIncomes = safeContrataciones.reduce((acc, c) => acc + c.subtotal, 0);
   const ingresosProyectados = totalBoringIncomes + totalServiceIncomes;
 
   // Outstanding unpaid balancing
-  const unpaidServices = contrataciones
+  const unpaidServices = safeContrataciones
     .filter((c) => c.estadoPago !== "Pagado")
     .reduce((acc, c) => acc + (c.estadoPago === "Parcial" ? c.subtotal / 2 : c.subtotal), 0);
-  const unpaidBookings = reservas.reduce((acc, r) => acc + (r.montoTotal - r.montoAnticipo), 0);
+  const unpaidBookings = safeReservas.reduce((acc, r) => acc + (r.montoTotal - r.montoAnticipo), 0);
   const saldoPorCobrar = unpaidServices + unpaidBookings;
 
   // Avg nights
-  const totalNoches = reservas.reduce((acc, r) => acc + r.noches, 0);
-  const estadiaPromedio = reservas.length > 0 ? (totalNoches / reservas.length).toFixed(1) : "0";
+  const totalNoches = safeReservas.reduce((acc, r) => acc + r.noches, 0);
+  const estadiaPromedio = safeReservas.length > 0 ? (totalNoches / safeReservas.length).toFixed(1) : "0";
 
   // Total reservations
-  const reservasTotalesCount = reservas.length;
+  const reservasTotalesCount = safeReservas.length;
 
   // 2. Compute reservations per cabin for the Donut Chart
-  const cabinBookingCounts = cabanas.map((c) => {
-    const count = reservas.filter((r) => r.cabanaId === c.id).length;
+  const cabinBookingCounts = safeCabanas.map((c) => {
+    const count = safeReservas.filter((r) => r.cabanaId === c.id).length;
     return {
       nombre: c.nombre,
       count,
@@ -68,7 +84,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
   // 3. Compute booking channels
   const channels = ["Airbnb", "Directo", "Booking", "Otros"] as const;
   const channelCounts = channels.map((chan) => {
-    const count = reservas.filter((r) => {
+    const count = safeReservas.filter((r) => {
       if (chan === "Otros") {
         return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
       }
@@ -98,6 +114,22 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
     };
   });
 
+  const selectedCabinReservations = selectedCabinSegment
+    ? safeReservas.filter((r) => {
+        const cab = safeCabanas.find((c) => c.nombre === selectedCabinSegment);
+        return cab && r.cabanaId === cab.id;
+      })
+    : [];
+
+  const selectedChannelReservations = selectedChannelSegment
+    ? safeReservas.filter((r) => {
+        if (selectedChannelSegment === "Otros") {
+          return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
+        }
+        return r.canalVentas === selectedChannelSegment;
+      })
+    : [];
+
   // State to filter monthly incomes by selected year
   const [selectedYear, setSelectedYear] = useState<number>(2026);
 
@@ -105,18 +137,18 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
   const monthlyValues: { [key: number]: number } = {};
 
   // Distribute booking values dynamically, filtering by the selected year
-  reservas.forEach((r) => {
-    const date = new Date(r.checkIn);
+  safeReservas.forEach((r) => {
+    const date = parseLocalDate(r.checkIn);
     if (!isNaN(date.getTime()) && date.getFullYear() === selectedYear) {
       const m = date.getMonth();
       monthlyValues[m] = (monthlyValues[m] || 0) + r.montoTotal * 1000;
     }
   });
 
-  contrataciones.forEach((c) => {
+  safeContrataciones.forEach((c) => {
     const dateStr = (c as any).fecha || (c as any).fechaContratacion;
     if (dateStr) {
-      const date = new Date(dateStr);
+      const date = parseLocalDate(dateStr);
       if (!isNaN(date.getTime()) && date.getFullYear() === selectedYear) {
         const m = date.getMonth();
         monthlyValues[m] = (monthlyValues[m] || 0) + c.subtotal * 1000;
@@ -253,7 +285,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
           <div className="flex items-center gap-2 pb-2 border-b border-neutral-900">
             <PieChart className="w-5 h-5 text-emerald-400" />
             <h3 className="text-lg font-headline font-semibold text-neutral-200">
-              Reservas por Cabaña
+              Reservas Activas por cabañas
             </h3>
           </div>
           <div className="flex flex-col items-center justify-center py-4">
@@ -274,26 +306,50 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                 {cabinDonutSegments.map((seg, i) => {
                   const dashArray = 2 * Math.PI * 40; // 251.3
                   const strokeOffset = dashArray - (seg.angle / 360) * dashArray;
+                  const isSelected = selectedCabinSegment === seg.nombre;
                   return (
-                    <circle
-                      key={seg.nombre}
-                      cx="50"
-                      cy="50"
-                      fill="transparent"
-                      r="40"
-                      stroke={seg.color}
-                      strokeWidth="18"
-                      strokeDasharray={251.3}
-                      strokeDashoffset={strokeOffset}
-                      className="transition-all duration-500 ease-out hover:brightness-110 cursor-pointer"
-                      transform={`rotate(${seg.startAngle - 90} 50 50)`}
-                    />
+                    <g 
+                      key={seg.nombre} 
+                      className="cursor-pointer" 
+                      onClick={() => {
+                        setSelectedCabinSegment((prev) => (prev === seg.nombre ? null : seg.nombre));
+                      }}
+                    >
+                      {/* White outline border behind selected segment */}
+                      {isSelected && (
+                        <circle
+                          cx="50"
+                          cy="50"
+                          fill="transparent"
+                          r="40"
+                          stroke="#ffffff"
+                          strokeWidth="22"
+                          strokeDasharray={251.3}
+                          strokeDashoffset={strokeOffset}
+                          className="transition-all duration-300 ease-out pointer-events-none"
+                          transform={`rotate(${seg.startAngle - 90} 50 50)`}
+                        />
+                      )}
+                      {/* Colored arc segment */}
+                      <circle
+                        cx="50"
+                        cy="50"
+                        fill="transparent"
+                        r="40"
+                        stroke={seg.color}
+                        strokeWidth="18"
+                        strokeDasharray={251.3}
+                        strokeDashoffset={strokeOffset}
+                        className="transition-all duration-300 ease-out hover:brightness-110"
+                        transform={`rotate(${seg.startAngle - 90} 50 50)`}
+                      />
+                    </g>
                   );
                 })}
 
                 {/* Render labels on top of the segments inside the wide ring */}
                 {cabinDonutSegments.map((seg) => {
-                  if (seg.percentage <= 4) return null; // Skip tiny slices to prevent overlap
+                  if (seg.count === 0) return null; // Skip slices with no bookings to prevent overlap
                   const midAngle = seg.startAngle + seg.angle / 2 - 90;
                   const angleRad = (midAngle * Math.PI) / 180;
                   // Center of the ring is at radius 40
@@ -303,7 +359,10 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                   const cabinLabel = seg.nombre.replace("Cabaña ", "").toUpperCase();
 
                   return (
-                    <g key={`label-${seg.nombre}`} className="select-none pointer-events-none">
+                    <g 
+                      key={`label-${seg.nombre}`} 
+                      className="select-none pointer-events-none transition-all duration-300"
+                    >
                       {/* Cabin Name with high-contrast outline halo */}
                       <text
                         x={labelX}
@@ -321,22 +380,22 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                       >
                         {cabinLabel}
                       </text>
-                      {/* Percentage with high-contrast outline halo */}
+                      {/* Count with high-contrast outline halo */}
                       <text
                         x={labelX}
                         y={labelY + 2.4}
-                        fill={seg.color}
+                        fill="#ffffff"
                         fontSize="4.2"
                         fontWeight="black"
                         textAnchor="middle"
                         dominantBaseline="central"
-                        className="font-sans font-black"
+                        className="font-sans font-black fill-white"
                         stroke="#000000"
                         strokeWidth="1.4"
                         strokeLinejoin="round"
                         paintOrder="stroke"
                       >
-                        {seg.percentage}%
+                        {seg.count}
                       </text>
                     </g>
                   );
@@ -352,6 +411,64 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
               </div>
             </div>
           </div>
+
+          {selectedCabinSegment && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="mt-6 p-5 bg-[#121412] border border-neutral-800/80 rounded-xl relative overflow-hidden shadow-lg"
+            >
+              {/* Decorative vertical colored stripe */}
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#10b981]"></div>
+              
+              <button
+                onClick={() => setSelectedCabinSegment(null)}
+                className="absolute top-3 right-3 text-neutral-500 hover:text-white text-xs cursor-pointer"
+                title="Cerrar detalle"
+              >
+                ✕
+              </button>
+              
+              <div className="pl-2 pr-4 flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-4">
+                <div>
+                  <span className="text-[10px] font-sans font-extrabold text-[#10b981] uppercase tracking-wider">
+                    Detalle de Cabaña
+                  </span>
+                  <h4 className="text-xl font-headline font-bold text-white mt-1">
+                    {selectedCabinSegment}
+                  </h4>
+                </div>
+                
+                <div className="flex items-center gap-6 self-start sm:self-center">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
+                      RESERVAS ACTIVAS
+                    </span>
+                    <span className="text-2xl font-sans font-black text-white mt-1">
+                      {safeReservas.filter((r) => {
+                        const cab = safeCabanas.find((c) => c.nombre === selectedCabinSegment);
+                        return cab && r.cabanaId === cab.id;
+                      }).length}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
+                      PORCENTAJE DE RESERVAS
+                    </span>
+                    <span className="text-2xl font-sans font-black text-[#10b981] mt-1">
+                      {Math.round(
+                        (safeReservas.filter((r) => {
+                          const cab = safeCabanas.find((c) => c.nombre === selectedCabinSegment);
+                          return cab && r.cabanaId === cab.id;
+                        }).length / (safeReservas.length || 1)) * 100
+                      )}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
 
         {/* Chart 2: Canal de Captación */}
@@ -377,26 +494,50 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                 {channelDonutSegments.map((seg, i) => {
                   const dashArray = 2 * Math.PI * 40;
                   const strokeOffset = dashArray - (seg.angle / 360) * dashArray;
+                  const isSelected = selectedChannelSegment === seg.name;
                   return (
-                    <circle
-                      key={seg.name}
-                      cx="50"
-                      cy="50"
-                      fill="transparent"
-                      r="40"
-                      stroke={seg.color}
-                      strokeWidth="18"
-                      strokeDasharray={251.3}
-                      strokeDashoffset={strokeOffset}
-                      className="transition-all duration-500 ease-out hover:brightness-110 cursor-pointer"
-                      transform={`rotate(${seg.startAngle - 90} 50 50)`}
-                    />
+                    <g 
+                      key={seg.name} 
+                      className="cursor-pointer" 
+                      onClick={() => {
+                        setSelectedChannelSegment((prev) => (prev === seg.name ? null : seg.name));
+                      }}
+                    >
+                      {/* White outline border behind selected segment */}
+                      {isSelected && (
+                        <circle
+                          cx="50"
+                          cy="50"
+                          fill="transparent"
+                          r="40"
+                          stroke="#ffffff"
+                          strokeWidth="22"
+                          strokeDasharray={251.3}
+                          strokeDashoffset={strokeOffset}
+                          className="transition-all duration-300 ease-out pointer-events-none"
+                          transform={`rotate(${seg.startAngle - 90} 50 50)`}
+                        />
+                      )}
+                      {/* Colored arc segment */}
+                      <circle
+                        cx="50"
+                        cy="50"
+                        fill="transparent"
+                        r="40"
+                        stroke={seg.color}
+                        strokeWidth="18"
+                        strokeDasharray={251.3}
+                        strokeDashoffset={strokeOffset}
+                        className="transition-all duration-300 ease-out hover:brightness-110"
+                        transform={`rotate(${seg.startAngle - 90} 50 50)`}
+                      />
+                    </g>
                   );
                 })}
 
                 {/* Render labels on top of the segments inside the wide ring */}
                 {channelDonutSegments.map((seg) => {
-                  if (seg.percentage <= 4) return null; // Skip tiny slices to prevent overlap
+                  if (seg.count === 0) return null; // Skip slices with no bookings to prevent overlap
                   const midAngle = seg.startAngle + seg.angle / 2 - 90;
                   const angleRad = (midAngle * Math.PI) / 180;
                   // Center of the ring is at radius 40
@@ -406,7 +547,10 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                   const channelLabel = seg.name.toUpperCase();
 
                   return (
-                    <g key={`label-${seg.name}`} className="select-none pointer-events-none">
+                    <g 
+                      key={`label-${seg.name}`} 
+                      className="select-none pointer-events-none transition-all duration-300"
+                    >
                       {/* Channel Name with high-contrast outline halo */}
                       <text
                         x={labelX}
@@ -424,22 +568,22 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                       >
                         {channelLabel}
                       </text>
-                      {/* Percentage with high-contrast outline halo */}
+                      {/* Count with high-contrast outline halo */}
                       <text
                         x={labelX}
                         y={labelY + 2.4}
-                        fill={seg.color}
+                        fill="#ffffff"
                         fontSize="4.2"
                         fontWeight="black"
                         textAnchor="middle"
                         dominantBaseline="central"
-                        className="font-sans font-black"
+                        className="font-sans font-black fill-white"
                         stroke="#000000"
                         strokeWidth="1.4"
                         strokeLinejoin="round"
                         paintOrder="stroke"
                       >
-                        {seg.percentage}%
+                        {seg.count}
                       </text>
                     </g>
                   );
@@ -453,6 +597,68 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
               </div>
             </div>
           </div>
+
+          {selectedChannelSegment && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              className="mt-6 p-5 bg-[#121412] border border-neutral-800/80 rounded-xl relative overflow-hidden shadow-lg"
+            >
+              {/* Decorative vertical colored stripe */}
+              <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#818cf8]"></div>
+              
+              <button
+                onClick={() => setSelectedChannelSegment(null)}
+                className="absolute top-3 right-3 text-neutral-500 hover:text-white text-xs cursor-pointer"
+                title="Cerrar detalle"
+              >
+                ✕
+              </button>
+              
+              <div className="pl-2 pr-4 flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-4">
+                <div>
+                  <span className="text-[10px] font-sans font-extrabold text-[#818cf8] uppercase tracking-wider">
+                    Detalle de Canal
+                  </span>
+                  <h4 className="text-xl font-headline font-bold text-white mt-1">
+                    {selectedChannelSegment}
+                  </h4>
+                </div>
+                
+                <div className="flex items-center gap-6 self-start sm:self-center">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
+                      RESERVAS ACTIVAS
+                    </span>
+                    <span className="text-2xl font-sans font-black text-white mt-1">
+                      {safeReservas.filter((r) => {
+                        if (selectedChannelSegment === "Otros") {
+                          return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
+                        }
+                        return r.canalVentas === selectedChannelSegment;
+                      }).length}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
+                      PORCENTAJE DE RESERVAS
+                    </span>
+                    <span className="text-2xl font-sans font-black text-[#818cf8] mt-1">
+                      {Math.round(
+                        (safeReservas.filter((r) => {
+                          if (selectedChannelSegment === "Otros") {
+                            return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
+                          }
+                          return r.canalVentas === selectedChannelSegment;
+                        }).length / (safeReservas.length || 1)) * 100
+                      )}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
         </div>
       </section>
 

@@ -1,6 +1,6 @@
 import { Cabana, Cliente, Servicio, Reserva, ContratacionServicio } from "../types";
 
-const API_URL = import.meta.env.VITE_GOOGLE_SHEETS_API_URL || "";
+const API_URL = (import.meta as any).env.VITE_GOOGLE_SHEETS_API_URL || "";
 
 export interface DatabaseState {
   cabanas: Cabana[];
@@ -88,6 +88,49 @@ export const sheetsService = {
       return result.success === true;
     } catch (error) {
       console.error(`Error guardando registro en Google Sheets (${sheetName}):`, error);
+      return false;
+    }
+  },
+
+  async deleteRecord(
+    sheetName: keyof DatabaseState,
+    recordId: string
+  ): Promise<boolean> {
+    // 1. Eliminar localmente primero
+    try {
+      const raw = localStorage.getItem(`entre_nieves_${sheetName}`);
+      if (raw) {
+        let list = JSON.parse(raw);
+        list = list.filter((item: any) => item.id !== recordId);
+        localStorage.setItem(`entre_nieves_${sheetName}`, JSON.stringify(list));
+      }
+    } catch (e) {
+      console.error("Error eliminando registro local:", e);
+    }
+
+    if (!isSheetsConfigured()) {
+      return true; // Éxito local simulado
+    }
+
+    try {
+      const response = await fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "text/plain",
+        },
+        body: JSON.stringify({
+          action: "delete",
+          sheet: sheetName,
+          id: recordId,
+        }),
+      });
+
+      if (!response.ok) throw new Error("Fallo en la petición de red");
+      
+      const result = await response.json();
+      return result.success === true;
+    } catch (error) {
+      console.error(`Error eliminando registro en Google Sheets (${sheetName}):`, error);
       return false;
     }
   },

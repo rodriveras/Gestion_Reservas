@@ -36,7 +36,24 @@ body {
   background: #434842;
   border-radius: 3px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: #8d928b;
+::selection {
+  background-color: rgba(74, 99, 78, 0.4);
+}
+
+/* Premium Diagonal PMS Calendar States */
+.occupancy-checkin-only {
+  background: linear-gradient(135deg, rgba(6, 78, 59, 0.4) 50%, rgba(159, 18, 57, 0.4) 50%) !important;
+  border-color: rgba(244, 63, 94, 0.25) !important;
+}
+
+.occupancy-checkout-only {
+  background: linear-gradient(135deg, rgba(159, 18, 57, 0.4) 50%, rgba(6, 78, 59, 0.4) 50%) !important;
+  border-color: rgba(244, 63, 94, 0.25) !important;
+}
+
+.occupancy-double-transition {
+  background: linear-gradient(135deg, rgba(159, 18, 57, 0.5) 48%, #1b1e1b 48%, #1b1e1b 52%, rgba(225, 29, 72, 0.5) 52%) !important;
+  border-color: rgba(244, 63, 94, 0.4) !important;
+  border-top: 4px solid #facc15 !important; /* Alerta de Aseo Express */
 }
 

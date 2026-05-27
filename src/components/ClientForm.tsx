@@ -9,11 +9,15 @@ import { ArrowLeft, Save, UserCheck, CalendarDays, Contact, HeartHandshake } fro
 import { Cliente } from "../types";
 
 interface ClientFormProps {
+  clientes?: Cliente[];
   onSave: (client: Cliente) => void;
   onBack: () => void;
 }
 
-export default function ClientForm({ onSave, onBack }: ClientFormProps) {
+export default function ClientForm({ clientes = [], onSave, onBack }: ClientFormProps) {
+  const [isEditingState, setIsEditingState] = useState(false);
+  const [selectedClientId, setSelectedClientId] = useState("");
+
   const [tipoDocumento, setTipoDocumento] = useState<"DNI" | "Pasaporte" | "Cédula">("DNI");
   const [numeroDocumento, setNumeroDocumento] = useState("");
   const [nacionalidad, setNacionalidad] = useState("Chile");
@@ -28,6 +32,86 @@ export default function ClientForm({ onSave, onBack }: ClientFormProps) {
   const [redSocialUser, setRedSocialUser] = useState("");
   const [notas, setNotas] = useState("");
 
+  const handleSelectClientToEdit = (clientId: string) => {
+    setSelectedClientId(clientId);
+    const client = clientes.find((c) => c.id === clientId);
+    if (client) {
+      setTipoDocumento(client.tipoDocumento);
+      setNumeroDocumento(client.numeroDocumento || "");
+      setNacionalidad(client.nacionalidad || "Chile");
+      setCiudadOrigen(client.ciudadOrigen || "Santiago");
+      setNombre(client.nombre || "");
+      setApellido(client.apellido || "");
+      setEmail(client.email || "");
+      setTelefono(client.telefono || "");
+      setFechaNacimiento(client.fechaNacimiento || "1990-01-01");
+      setEstado(client.estado || "activo");
+      setRedSocial(client.redSocial || "WhatsApp");
+      setRedSocialUser(client.redSocialUser || "");
+      setNotas(client.notas || "");
+    } else {
+      // Reset to blank/new client mode
+      setNombre("");
+      setApellido("");
+      setNumeroDocumento("");
+      setEmail("");
+      setTelefono("");
+      setFechaNacimiento("1990-01-01");
+      setNacionalidad("Chile");
+      setCiudadOrigen("Santiago");
+      setEstado("activo");
+      setRedSocial("WhatsApp");
+      setRedSocialUser("");
+      setNotas("");
+    }
+  };
+
+  const days = Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0"));
+  const months = [
+    { value: "01", label: "Ene" },
+    { value: "02", label: "Feb" },
+    { value: "03", label: "Mar" },
+    { value: "04", label: "Abr" },
+    { value: "05", label: "May" },
+    { value: "06", label: "Jun" },
+    { value: "07", label: "Jul" },
+    { value: "08", label: "Ago" },
+    { value: "09", label: "Sep" },
+    { value: "10", label: "Oct" },
+    { value: "11", label: "Nov" },
+    { value: "12", label: "Dic" },
+  ];
+  const currentYear = new Date().getFullYear();
+  const years = Array.from({ length: 110 }, (_, i) => String(currentYear - i));
+
+  const getBirthDay = (dateStr: string) => {
+    if (!dateStr || !dateStr.includes("-")) return "01";
+    return dateStr.split("-")[2] || "01";
+  };
+
+  const getBirthMonth = (dateStr: string) => {
+    if (!dateStr || !dateStr.includes("-")) return "01";
+    return dateStr.split("-")[1] || "01";
+  };
+
+  const getBirthYear = (dateStr: string) => {
+    if (!dateStr || !dateStr.includes("-")) return "1990";
+    return dateStr.split("-")[0] || "1990";
+  };
+
+  const handleDropboxChange = (type: "day" | "month" | "year", value: string) => {
+    let y = getBirthYear(fechaNacimiento);
+    let m = getBirthMonth(fechaNacimiento);
+    let d = getBirthDay(fechaNacimiento);
+
+    if (type === "year") y = value;
+    if (type === "month") m = value;
+    if (type === "day") d = value;
+
+    setFechaNacimiento(`${y}-${m}-${d}`);
+  };
+
+
   const autoId = `CLI-2026-${Math.floor(10000 + Math.random() * 90000)}`;
   const fechaRegistro = new Date().toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
 
@@ -35,8 +119,12 @@ export default function ClientForm({ onSave, onBack }: ClientFormProps) {
     e.preventDefault();
     if (!nombre.trim() || !apellido.trim()) return;
 
+    const targetId = isEditingState && selectedClientId ? selectedClientId : autoId;
+    const originalClient = isEditingState && selectedClientId ? clientes.find((c) => c.id === selectedClientId) : null;
+    const targetFechaRegistro = originalClient?.fechaRegistro || new Date().toISOString().split("T")[0];
+
     const newClient: Cliente = {
-      id: autoId,
+      id: targetId,
       tipoDocumento,
       numeroDocumento: numeroDocumento || "Sin Documento",
       nacionalidad,
@@ -50,9 +138,10 @@ export default function ClientForm({ onSave, onBack }: ClientFormProps) {
       redSocial,
       redSocialUser: redSocialUser || "@usuario",
       notas: notas || "Preferencias estándar",
-      fechaRegistro: new Date().toISOString().split("T")[0],
+      fechaRegistro: targetFechaRegistro,
     };
 
+    alert(isEditingState ? "¡Cliente actualizado satisfactoriamente!" : "¡Cliente registrado satisfactoriamente!");
     onSave(newClient);
     onBack();
   };
@@ -75,12 +164,52 @@ export default function ClientForm({ onSave, onBack }: ClientFormProps) {
         <span className="text-[10px] font-sans font-bold text-[#f6bb89] uppercase tracking-widest block mb-1">
           Formulario de Registro
         </span>
-        <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
-          Nuevo Cliente
-        </h2>
-        <p className="text-neutral-400 font-sans text-sm mt-1">
-          Complete los campos requeridos para archivar los datos del cliente.
-        </p>
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
+            {isEditingState ? "Editar Cliente" : "Nuevo Cliente"}
+          </h2>
+          {clientes && clientes.length > 0 && (
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsEditingState(!isEditingState);
+                  if (isEditingState) {
+                    handleSelectClientToEdit("");
+                  }
+                }}
+                className={`flex items-center gap-2 px-4.5 py-2.5 text-xs font-sans font-extrabold rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg ${
+                  isEditingState
+                    ? "bg-[#1b1e1b] text-neutral-400 hover:text-white border border-neutral-800 hover:bg-neutral-800"
+                    : "bg-[#4a634e] text-white hover:bg-[#5b7a60] border border-[#b2ceb4]/40 shadow-emerald-950/40"
+                }`}
+              >
+                <UserCheck className="w-4 h-4" />
+                {isEditingState ? "Modo Nuevo Cliente" : "Editar Cliente"}
+              </button>
+
+              {isEditingState && (
+                <div className="relative">
+                  <select
+                    value={selectedClientId}
+                    onChange={(e) => handleSelectClientToEdit(e.target.value)}
+                    className="pl-3 pr-8 py-2 bg-[#121412] text-xs font-medium text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg outline-none appearance-none cursor-pointer min-w-[200px]"
+                  >
+                    <option value="">-- Seleccione Cliente --</option>
+                    {clientes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.nombre} {c.apellido} ({c.numeroDocumento})
+                      </option>
+                    ))}
+                  </select>
+                  <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none text-sm">
+                    expand_more
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-24">
@@ -102,7 +231,7 @@ export default function ClientForm({ onSave, onBack }: ClientFormProps) {
                 </label>
                 <input
                   type="text"
-                  value={autoId}
+                  value={isEditingState && selectedClientId ? selectedClientId : autoId}
                   readOnly
                   className="w-full bg-[#121412] text-neutral-500 border border-neutral-800 rounded-lg p-2.5 text-xs font-semibold opacity-75 cursor-not-allowed"
                 />
@@ -115,7 +244,8 @@ export default function ClientForm({ onSave, onBack }: ClientFormProps) {
                 <select
                   value={tipoDocumento}
                   onChange={(e) => setTipoDocumento(e.target.value as any)}
-                  className="w-full bg-[#121412] text-neutral-300 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none"
+                  disabled={isEditingState}
+                  className="w-full bg-[#121412] text-neutral-300 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="DNI">DNI</option>
                   <option value="Pasaporte">Pasaporte</option>
@@ -133,7 +263,8 @@ export default function ClientForm({ onSave, onBack }: ClientFormProps) {
                   placeholder="Ej: 45.321.987"
                   value={numeroDocumento}
                   onChange={(e) => setNumeroDocumento(e.target.value)}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none transition-all"
+                  disabled={isEditingState}
+                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
 
@@ -232,16 +363,63 @@ export default function ClientForm({ onSave, onBack }: ClientFormProps) {
               </div>
 
               <div className="col-span-full">
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
                   Fecha de Nacimiento
                 </label>
-                <input
-                  type="date"
-                  required
-                  value={fechaNacimiento}
-                  onChange={(e) => setFechaNacimiento(e.target.value)}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none"
-                />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Left Side: Standard Date Input */}
+                  <div>
+                    <input
+                      type="date"
+                      required
+                      value={fechaNacimiento}
+                      onChange={(e) => setFechaNacimiento(e.target.value)}
+                      className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none h-[38px]"
+                    />
+                  </div>
+
+                  {/* Right Side: Triple Dropdown Selectors */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <select
+                      value={getBirthDay(fechaNacimiento)}
+                      onChange={(e) => handleDropboxChange("day", e.target.value)}
+                      className="w-full bg-[#121412] text-neutral-300 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none h-[38px] text-center"
+                      title="Seleccionar Día"
+                    >
+                      {days.map((d) => (
+                        <option key={d} value={d}>
+                          {d}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={getBirthMonth(fechaNacimiento)}
+                      onChange={(e) => handleDropboxChange("month", e.target.value)}
+                      className="w-full bg-[#121412] text-neutral-300 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none h-[38px]"
+                      title="Seleccionar Mes"
+                    >
+                      {months.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={getBirthYear(fechaNacimiento)}
+                      onChange={(e) => handleDropboxChange("year", e.target.value)}
+                      className="w-full bg-[#121412] text-neutral-300 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none h-[38px] text-center"
+                      title="Seleccionar Año"
+                    >
+                      {years.map((y) => (
+                        <option key={y} value={y}>
+                          {y}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
               </div>
             </div>
           </section>
@@ -327,7 +505,11 @@ export default function ClientForm({ onSave, onBack }: ClientFormProps) {
                 Fecha de Registro
               </p>
               <p className="text-sm font-sans font-bold text-[#f6bb89] mt-0.5">
-                {fechaRegistro}
+                {isEditingState && selectedClientId
+                  ? new Date(
+                      clientes.find((c) => c.id === selectedClientId)?.fechaRegistro || ""
+                    ).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })
+                  : fechaRegistro}
               </p>
             </div>
             <CalendarDays className="w-8 h-8 text-[#f6bb89]/80" />
@@ -340,7 +522,7 @@ export default function ClientForm({ onSave, onBack }: ClientFormProps) {
               className="w-full py-4 bg-[#4a634e] text-white font-bold rounded-xl shadow-lg hover:brightness-110 active:scale-95 transition-all text-xs font-sans uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer"
             >
               <Save className="w-4 h-4" />
-              Guardar Cliente
+              {isEditingState ? "Guardar Cambios" : "Guardar Cliente"}
             </button>
             <button
               type="button"

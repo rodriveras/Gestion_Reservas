@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { Trees, User, Bell, HelpCircle, Shield, Briefcase, ChevronRight, Cloud, CloudOff, RefreshCw } from "lucide-react";
+import { Trees, User, Bell, HelpCircle, Shield, Briefcase, ChevronRight, Cloud, CloudOff, RefreshCw, Calendar } from "lucide-react";
 
 // Types and Seed lists
 import {
@@ -38,27 +38,66 @@ export default function App() {
   // --- Persistent Local Database State Engine ---
   const [cabanas, setCabanas] = useState<Cabana[]>(() => {
     const saved = localStorage.getItem("entre_nieves_cabanas");
-    return saved ? JSON.parse(saved) : INITIAL_CABANAS;
+    let list = saved ? JSON.parse(saved) : INITIAL_CABANAS;
+    // Clear mock cabin seeds
+    if (list.some((c: any) => c.id === "CAB-01" || c.nombre === "Cabaña Roble")) {
+      localStorage.removeItem("entre_nieves_cabanas");
+      list = INITIAL_CABANAS;
+    }
+    return list;
   });
 
   const [clientes, setClientes] = useState<Cliente[]>(() => {
     const saved = localStorage.getItem("entre_nieves_clientes");
-    return saved ? JSON.parse(saved) : INITIAL_CLIENTES;
+    let list = saved ? JSON.parse(saved) : INITIAL_CLIENTES;
+    // Clear mock client seeds
+    if (list.some((c: any) => c.id === "CLI-77824" || c.id === "CLI-2026-AUTO" || (c.fechaRegistro && c.fechaRegistro.startsWith("2024-")))) {
+      localStorage.removeItem("entre_nieves_clientes");
+      list = INITIAL_CLIENTES;
+    }
+    return list;
   });
 
   const [servicios, setServicios] = useState<Servicio[]>(() => {
     const saved = localStorage.getItem("entre_nieves_servicios");
-    return saved ? JSON.parse(saved) : INITIAL_SERVICIOS;
+    let list = saved ? JSON.parse(saved) : INITIAL_SERVICIOS;
+    // Clear mock service seeds
+    if (list.some((s: any) => s.id === "01" || s.nombre === "Tour de Senderismo Nocturno")) {
+      localStorage.removeItem("entre_nieves_servicios");
+      list = INITIAL_SERVICIOS;
+    }
+    return list;
   });
 
   const [reservas, setReservas] = useState<Reserva[]>(() => {
     const saved = localStorage.getItem("entre_nieves_reservas");
-    return saved ? JSON.parse(saved) : INITIAL_RESERVAS;
+    let loaded: Reserva[] = saved ? JSON.parse(saved) : [];
+    
+    // Clear mock reservation seeds (only old 2024 mock datasets)
+    if (loaded.some((r) => r.id === "RES-77824" || r.id === "RES-MOCK-01" || (r.checkIn && r.checkIn.startsWith("2024-")))) {
+      localStorage.removeItem("entre_nieves_reservas");
+      loaded = [];
+    }
+    
+    // Ensure all INITIAL_RESERVAS (including mock days) are present in the list
+    const merged = [...loaded];
+    INITIAL_RESERVAS.forEach((mock) => {
+      if (!merged.some((r) => r.id === mock.id)) {
+        merged.push(mock);
+      }
+    });
+    return merged;
   });
 
   const [contrataciones, setContrataciones] = useState<ContratacionServicio[]>(() => {
     const saved = localStorage.getItem("entre_nieves_contrataciones");
-    return saved ? JSON.parse(saved) : INITIAL_CONTRATACIONES;
+    let list = saved ? JSON.parse(saved) : INITIAL_CONTRATACIONES;
+    // Clear mock contract seeds (only old 2024 mock datasets)
+    if (list.some((c: any) => c.id === "CON-01" || (c.fecha && c.fecha.startsWith("2024-")))) {
+      localStorage.removeItem("entre_nieves_contrataciones");
+      list = INITIAL_CONTRATACIONES;
+    }
+    return list;
   });
 
   // --- Google Sheets Integration State Engine ---
@@ -68,8 +107,18 @@ export default function App() {
 
   // Navigation Screen Name
   const [currentScreen, setCurrentScreen] = useState<string>("admin");
+  const [lastScreen, setLastScreen] = useState<string>("admin");
   const [preselectedCabinId, setPreselectedCabinId] = useState<string>("");
   const [preselectedCheckIn, setPreselectedCheckIn] = useState<string>("");
+  const [viewBookingId, setViewBookingId] = useState<string>("");
+
+  // Navigation transition helper
+  const navigateTo = (screen: string) => {
+    if (["calendar", "dashboard", "admin"].includes(screen)) {
+      setLastScreen(screen);
+    }
+    setCurrentScreen(screen);
+  };
 
   // Synchronizers (Local Backup)
   useEffect(() => {
@@ -144,7 +193,13 @@ export default function App() {
   };
 
   const handleAddClient = async (newClient: Cliente) => {
-    setClientes((prev) => [newClient, ...prev]);
+    setClientes((prev) => {
+      const exists = prev.some((c) => c.id === newClient.id);
+      if (exists) {
+        return prev.map((c) => (c.id === newClient.id ? newClient : c));
+      }
+      return [newClient, ...prev];
+    });
     
     setIsSyncing(true);
     setSyncStatus("loading");
@@ -166,11 +221,28 @@ export default function App() {
   };
 
   const handleAddBooking = async (newBooking: Reserva) => {
-    setReservas((prev) => [newBooking, ...prev]);
+    setReservas((prev) => {
+      const exists = prev.some((r) => r.id === newBooking.id);
+      if (exists) {
+        return prev.map((r) => (r.id === newBooking.id ? newBooking : r));
+      }
+      return [newBooking, ...prev];
+    });
     
     setIsSyncing(true);
     setSyncStatus("loading");
     const success = await sheetsService.saveRecord("reservas", newBooking);
+    setSyncStatus(success ? "success" : "error");
+    setIsSyncing(false);
+    setTimeout(() => setSyncStatus("idle"), 3000);
+  };
+
+  const handleDeleteBooking = async (bookingId: string) => {
+    setReservas((prev) => prev.filter((r) => r.id !== bookingId));
+    
+    setIsSyncing(true);
+    setSyncStatus("loading");
+    const success = await sheetsService.deleteRecord("reservas", bookingId);
     setSyncStatus(success ? "success" : "error");
     setIsSyncing(false);
     setTimeout(() => setSyncStatus("idle"), 3000);
@@ -276,22 +348,25 @@ export default function App() {
       <main className="relative z-10 flex-grow w-full max-w-container-max mx-auto px-6 py-8 pb-20">
         {currentScreen === "admin" && (
           <AdminLauncher
-            onNavigate={(screen) => setCurrentScreen(screen)}
-            onLogoutToGuest={() => setCurrentScreen("guest")}
+            onNavigate={(screen) => navigateTo(screen)}
+            onLogoutToGuest={() => navigateTo("guest")}
             stats={statsSummary}
           />
         )}
+
+
 
         {currentScreen === "calendar" && (
           <CalendarView
             cabanas={cabanas}
             reservas={reservas}
             clientes={clientes}
-            onBack={() => setCurrentScreen("admin")}
-            onNavigate={(screen, cabinId, checkIn) => {
+            onBack={() => navigateTo("admin")}
+            onNavigate={(screen, cabinId, checkIn, viewBookingId) => {
               if (cabinId) setPreselectedCabinId(cabinId);
               if (checkIn) setPreselectedCheckIn(checkIn);
-              setCurrentScreen(screen);
+              if (viewBookingId) setViewBookingId(viewBookingId);
+              navigateTo(screen);
             }}
           />
         )}
@@ -302,28 +377,29 @@ export default function App() {
             reservas={reservas}
             contrataciones={contrataciones}
             clientes={clientes}
-            onBack={() => setCurrentScreen("admin")}
+            onBack={() => navigateTo("admin")}
           />
         )}
 
         {currentScreen === "new-cabin" && (
           <CabinForm
             onSave={handleAddCabin}
-            onBack={() => setCurrentScreen("admin")}
+            onBack={() => navigateTo(lastScreen)}
           />
         )}
 
         {currentScreen === "new-client" && (
           <ClientForm
+            clientes={clientes}
             onSave={handleAddClient}
-            onBack={() => setCurrentScreen("admin")}
+            onBack={() => navigateTo(lastScreen)}
           />
         )}
 
         {currentScreen === "new-service" && (
           <ServiceForm
             onSave={handleAddService}
-            onBack={() => setCurrentScreen("admin")}
+            onBack={() => navigateTo(lastScreen)}
           />
         )}
 
@@ -331,14 +407,19 @@ export default function App() {
           <BookingForm
             cabanas={cabanas}
             clientes={clientes}
+            reservas={reservas}
             onSave={handleAddBooking}
+            onDelete={handleDeleteBooking}
             onBack={() => {
+              const returnTo = lastScreen;
               setPreselectedCabinId("");
               setPreselectedCheckIn("");
-              setCurrentScreen("admin");
+              setViewBookingId("");
+              navigateTo(returnTo);
             }}
             initialCabanaId={preselectedCabinId}
             initialCheckIn={preselectedCheckIn}
+            viewBookingId={viewBookingId}
           />
         )}
 
@@ -347,8 +428,9 @@ export default function App() {
             clientes={clientes}
             servicios={servicios}
             reservas={reservas}
+            cabanas={cabanas}
             onSave={handleAddContratacion}
-            onBack={() => setCurrentScreen("admin")}
+            onBack={() => navigateTo(lastScreen)}
           />
         )}
 
@@ -356,21 +438,65 @@ export default function App() {
           <GuestView
             cabanas={cabanas}
             reservas={reservas}
-            onBackToAdmin={() => setCurrentScreen("admin")}
+            onBackToAdmin={() => navigateTo(lastScreen)}
           />
         )}
       </main>
 
-      {/* Persistent global footer bar indicator */}
-      {currentScreen !== "admin" && (
-        <div className="fixed bottom-0 left-0 w-full bg-[#0d0f0d] p-4 border-t border-neutral-900/65 z-40 flex items-center justify-center">
+      {/* Persistent Bottom Navigation Bar for Admin Primary Screens */}
+      {["calendar", "dashboard", "admin"].includes(currentScreen) ? (
+        <div className="fixed bottom-0 left-0 w-full bg-[#1b1e1b] border-t border-neutral-900/80 px-2 py-1.5 z-40 flex items-center justify-around shadow-2xl h-16 pb-safe">
+
+
+          {/* Tab 2: Calendar */}
           <button
-            onClick={() => setCurrentScreen("admin")}
-            className="px-6 py-2.5 bg-[#4a634e] text-white hover:brightness-110 font-sans font-bold text-xs rounded-lg uppercase tracking-wider transition-all"
+            onClick={() => navigateTo("calendar")}
+            className={`flex flex-col items-center justify-center gap-1 w-16 h-full transition-all cursor-pointer ${
+              currentScreen === "calendar" ? "text-[#b2ceb4] scale-105 font-bold" : "text-neutral-500 hover:text-neutral-300"
+            }`}
           >
-            Menú Principal Administración
+            <Calendar className="w-4.5 h-4.5" />
+            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">Mensual</span>
+          </button>
+
+          {/* Tab 3: Metrics */}
+          <button
+            onClick={() => navigateTo("dashboard")}
+            className={`flex flex-col items-center justify-center gap-1 w-16 h-full transition-all cursor-pointer ${
+              currentScreen === "dashboard" ? "text-[#b2ceb4] scale-105 font-bold" : "text-neutral-500 hover:text-neutral-300"
+            }`}
+          >
+            <span className="material-symbols-outlined text-lg">
+              analytics
+            </span>
+            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">Métricas</span>
+          </button>
+
+          {/* Tab 4: Settings launcher */}
+          <button
+            onClick={() => navigateTo("admin")}
+            className={`flex flex-col items-center justify-center gap-1 w-16 h-full transition-all cursor-pointer ${
+              currentScreen === "admin" ? "text-[#b2ceb4] scale-105 font-bold" : "text-neutral-500 hover:text-neutral-300"
+            }`}
+          >
+            <span className="material-symbols-outlined text-lg">
+              settings
+            </span>
+            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">Ajustes</span>
           </button>
         </div>
+      ) : (
+        /* Form editing back button footer fallback for mobile safety */
+        currentScreen !== "guest" && (
+          <div className="fixed bottom-0 left-0 w-full bg-[#0d0f0d]/95 p-3.5 border-t border-neutral-900/65 z-40 flex items-center justify-center">
+            <button
+              onClick={() => navigateTo(lastScreen)}
+              className="px-6 py-2 bg-gradient-to-r from-neutral-850 to-neutral-900 text-neutral-300 border border-neutral-800 hover:text-white hover:border-neutral-700 font-sans font-bold text-xs rounded-xl uppercase tracking-wider transition-all cursor-pointer"
+            >
+              Volver al Panel
+            </button>
+          </div>
+        )
       )}
     </div>
   );

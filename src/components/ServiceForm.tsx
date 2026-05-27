@@ -37,6 +37,7 @@ export default function ServiceForm({ onSave, onBack }: ServiceFormProps) {
       estado,
     };
 
+    alert("¡Servicio guardado satisfactoriamente!");
     onSave(newService);
     onBack();
   };

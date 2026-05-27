@@ -5,88 +5,487 @@
 
 import { useState, useEffect, FormEvent } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Save, Sparkles, DollarSign, Calendar, Landmark, Users } from "lucide-react";
+import { ArrowLeft, Save, Sparkles, DollarSign, Calendar, Landmark, Users, Trash2 } from "lucide-react";
 import { Cabana, Cliente, Reserva } from "../types";
 
 interface BookingFormProps {
   cabanas: Cabana[];
   clientes: Cliente[];
+  reservas: Reserva[];
   onSave: (booking: Reserva) => void;
+  onDelete?: (bookingId: string) => void;
   onBack: () => void;
   initialCabanaId?: string;
   initialCheckIn?: string;
+  viewBookingId?: string;
 }
 
 export default function BookingForm({
   cabanas,
   clientes,
+  reservas = [],
   onSave,
+  onDelete,
   onBack,
   initialCabanaId = "",
-  initialCheckIn = ""
+  initialCheckIn = "",
+  viewBookingId = ""
 }: BookingFormProps) {
-  const [clienteId, setClienteId] = useState("");
-  const [cabanaId, setCabanaId] = useState(initialCabanaId);
-  const [pasajeros, setPasajeros] = useState(2);
-  const [entrada, setEntrada] = useState(initialCheckIn || "2024-06-12");
-  
-  // Calculate default check-out date as 2 days after check-in date
-  const [salida, setSalida] = useState(() => {
-    if (initialCheckIn) {
-      const d = new Date(initialCheckIn);
-      d.setDate(d.getDate() + 2); // 2 nights default
-      return d.toISOString().split("T")[0];
-    }
-    return "2024-06-14";
+  const existingBooking = viewBookingId ? (reservas || []).find((r) => r.id === viewBookingId) : null;
+  const [isEditMode, setIsEditMode] = useState(true);
+  const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
+
+  const [initialCabanaIdState] = useState(() => existingBooking?.cabanaId || initialCabanaId);
+  const [initialNochesState] = useState(() => existingBooking?.noches || 0);
+
+  const [clienteId, setClienteId] = useState(() => existingBooking?.clienteId || "");
+  const [cabanaId, setCabanaId] = useState(() => existingBooking?.cabanaId || initialCabanaId);
+  const [pasajeros, setPasajeros] = useState(() => existingBooking?.cantidadPersonas || 2);
+  const [entrada, setEntrada] = useState(() => {
+    if (existingBooking) return existingBooking.checkIn;
+    if (initialCheckIn) return initialCheckIn;
+    return new Date().toISOString().split("T")[0];
   });
   
-  const [canalVentas, setCanalVentas] = useState<Reserva["canalVentas"]>("Directo");
-  const [montoTotal, setMontoTotal] = useState("");
-  const [montoAnticipo, setMontoAnticipo] = useState("");
-  const [estadoReserva, setEstadoReserva] = useState<Reserva["estadoReserva"]>("Confirmada");
-  const [metodoPago, setMetodoPago] = useState<Reserva["metodoPago"]>("Efectivo");
+  // Calculate default check-out date as 1 day after check-in date
+  const [salida, setSalida] = useState(() => {
+    if (existingBooking) return existingBooking.checkOut;
+    const baseDate = initialCheckIn ? new Date(initialCheckIn + "T12:00:00") : new Date();
+    if (!isNaN(baseDate.getTime())) {
+      const tomorrow = new Date(baseDate);
+      tomorrow.setDate(tomorrow.getDate() + 1); // 1 night default
+      return tomorrow.toISOString().split("T")[0];
+    }
+    return "";
+  });
+  
+  const [canalVentas, setCanalVentas] = useState<Reserva["canalVentas"]>(() => existingBooking?.canalVentas || "Directo");
+  const [montoTotal, setMontoTotal] = useState(() => existingBooking?.montoTotal ? (existingBooking.montoTotal * 1000).toString() : "");
+  const [montoAnticipo, setMontoAnticipo] = useState(() => existingBooking?.montoAnticipo ? (existingBooking.montoAnticipo * 1000).toString() : "");
+  const [estadoReserva, setEstadoReserva] = useState<Reserva["estadoReserva"]>(() => existingBooking?.estadoReserva || "Pendiente de Pago");
+  const [metodoPago, setMetodoPago] = useState<Reserva["metodoPago"]>(() => existingBooking?.metodoPago || "Transferencia");
 
-  const bookingId = `LF-2024-${Math.floor(10000 + Math.random() * 90000)}`;
+  const [bookingId] = useState(() => existingBooking?.id || `LF-2026-${Math.floor(10000 + Math.random() * 90000)}`);
 
-  // Calculate nights automatically
-  const checkInDate = new Date(entrada);
-  const checkOutDate = new Date(salida);
-  const diffTime = Math.abs(checkOutDate.getTime() - checkInDate.getTime());
-  const nochesCalculated = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) || 0;
+  // Fecha de Reserva state
+  const [fechaReserva, setFechaReserva] = useState(() => existingBooking?.fechaReserva || new Date().toISOString().split("T")[0]);
+  const [isBookingDateCalendarExpanded, setIsBookingDateCalendarExpanded] = useState(false);
+  const [bookingDateCalendarViewDate, setBookingDateCalendarViewDate] = useState(() => {
+    const d = new Date(fechaReserva || new Date().toISOString().split("T")[0]);
+    return isNaN(d.getTime()) ? new Date() : d;
+  });
+
+  // Client validation state
+  const selectedClientObj = clientes.find((c) => c.id === clienteId);
+  const isClientBlockedOrSuspended = selectedClientObj && selectedClientObj.estado !== "activo";
+
+  // Cabin validation state
+  const selectedCabinObj = cabanas.find((c) => c.id === cabanaId);
+  const isCabinInMaintenance = selectedCabinObj?.estado === "Mantenimiento";
+  const hasStayOverlapConflict = (reservas || []).some((r) => {
+    if (r.id === bookingId) return false;
+    if (r.cabanaId !== cabanaId) return false;
+    if (r.estadoReserva === "Cancelada") return false;
+    return !!(entrada && salida && r.checkIn && r.checkOut && (entrada < r.checkOut && salida > r.checkIn));
+  });
+  const isCabinNotAvailable = !!(isCabinInMaintenance || hasStayOverlapConflict);
+
+  // Date validations
+  const todayStr = new Date().toISOString().split("T")[0];
+  const isPastCheckIn = !existingBooking && entrada && entrada < todayStr;
+  const isInvalidCheckout = entrada && salida && salida <= entrada;
+  const hasDateError = isPastCheckIn || isInvalidCheckout;
+
+  // Passenger capacity validation
+  const exceedsCapacity = selectedCabinObj && pasajeros > selectedCabinObj.capacidad;
+
+  // Form disable logic
+  const isFormDisabled = isClientBlockedOrSuspended || isCabinNotAvailable || hasDateError || exceedsCapacity;
+
+  // Automatically adjust booking date calendar view month if fechaReserva changes
+  useEffect(() => {
+    if (fechaReserva) {
+      const d = new Date(fechaReserva);
+      if (!isNaN(d.getTime())) {
+        setBookingDateCalendarViewDate(d);
+      }
+    }
+  }, [fechaReserva]);
+
+  // Mini stay calendar state
+  const [calendarViewDate, setCalendarViewDate] = useState(() => {
+    const d = new Date(entrada || "2026-05-20");
+    return isNaN(d.getTime()) ? new Date("2026-05-20") : d;
+  });
+
+  // Automatically adjust calendar view month if checkout or checkin changes
+  useEffect(() => {
+    if (entrada) {
+      const d = new Date(entrada);
+      if (!isNaN(d.getTime())) {
+        setCalendarViewDate(d);
+      }
+    }
+  }, [entrada]);
+
+  const toggleBookingDateCalendar = () => {
+    if (!isEditMode) return;
+    setIsBookingDateCalendarExpanded(!isBookingDateCalendarExpanded);
+    setIsCalendarExpanded(false);
+  };
+
+  const toggleStayCalendar = () => {
+    if (!isEditMode) return;
+    setIsCalendarExpanded(!isCalendarExpanded);
+    setIsBookingDateCalendarExpanded(false);
+  };
+
+  // Quantity of days (stay duration) state
+  const [noches, setNoches] = useState(() => {
+    if (existingBooking) return existingBooking.noches;
+    const checkInDate = new Date(entrada + "T12:00:00");
+    const checkOutDate = new Date(salida + "T12:00:00");
+    const diffTime = Math.abs(checkOutDate.getTime() - checkInDate.getTime());
+    return Math.round(diffTime / (1000 * 60 * 60 * 24)) || 1;
+  });
+
+  // Automatically update checkout (salida) when entrada or noches change
+  useEffect(() => {
+    if (entrada && noches > 0) {
+      const d = new Date(entrada + "T12:00:00");
+      if (!isNaN(d.getTime())) {
+        d.setDate(d.getDate() + noches);
+        setSalida(d.toISOString().split("T")[0]);
+      }
+    }
+  }, [entrada, noches]);
 
   // Auto calculate total amount based on cabin selection and nights
   useEffect(() => {
-    if (cabanaId) {
+    // If it's an existing booking and we haven't changed the cabin or stay duration, preserve original prices
+    if (existingBooking && cabanaId === initialCabanaIdState && noches === initialNochesState) {
+      return;
+    }
+
+    if (cabanaId && isEditMode) {
       const cabana = cabanas.find((c) => c.id === cabanaId);
       if (cabana) {
-        const calculatedTotal = cabana.precioBase * nochesCalculated;
+        const calculatedTotal = cabana.precioBase * noches * 1000;
         setMontoTotal(calculatedTotal.toString());
         // set default deposit to 30% of total
         setMontoAnticipo(Math.round(calculatedTotal * 0.3).toString());
       }
     }
-  }, [cabanaId, nochesCalculated, cabanas]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cabanaId, noches, cabanas]);
+
+  const renderMiniCalendar = () => {
+    const year = calendarViewDate.getFullYear();
+    const month = calendarViewDate.getMonth();
+    
+    // Month name in Spanish
+    const monthNames = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+    const monthLabel = `${monthNames[month]} ${year}`;
+
+    const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Sun, 1 = Mon...
+    const offset = firstDayIndex === 0 ? 6 : firstDayIndex - 1; // Mon = 0
+    const totalDays = new Date(year, month + 1, 0).getDate();
+
+    const daysList = [];
+    // Prev month tail
+    const prevMonthDaysCount = new Date(year, month, 0).getDate();
+    for (let i = offset - 1; i >= 0; i--) {
+      daysList.push({
+        day: prevMonthDaysCount - i,
+        isCurrent: false,
+        dateString: ""
+      });
+    }
+    // Current month days
+    for (let i = 1; i <= totalDays; i++) {
+      const dateString = `${year}-${(month + 1).toString().padStart(2, "0")}-${i.toString().padStart(2, "0")}`;
+      daysList.push({
+        day: i,
+        isCurrent: true,
+        dateString
+      });
+    }
+    // Next month tail to pad to 42 cells
+    const nextOffset = 42 - daysList.length;
+    for (let i = 1; i <= nextOffset; i++) {
+      daysList.push({
+        day: i,
+        isCurrent: false,
+        dateString: ""
+      });
+    }
+
+    const handleDayClick = (dateStr: string) => {
+      if (!isEditMode || !dateStr) return;
+      
+      const clicked = new Date(dateStr + "T12:00:00");
+      const currentIn = entrada ? new Date(entrada + "T12:00:00") : null;
+
+      // If we don't have check-in, or if we have both set, or if clicked date is before check-in:
+      if (!entrada || (entrada && salida) || (currentIn && clicked < currentIn)) {
+        setEntrada(dateStr);
+        setSalida(""); // Clear check-out to wait for next selection click
+      } else if (entrada && !salida && currentIn) {
+        // If clicked date is after check-in, set it as check-out
+        if (clicked > currentIn) {
+          setSalida(dateStr);
+          const diff = Math.round(Math.abs(clicked.getTime() - currentIn.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+          setNoches(diff);
+          setIsCalendarExpanded(false); // Close calendar popover on stay selection completion
+        }
+      }
+    };
+
+    const isDateInRange = (dateStr: string) => {
+      if (!dateStr || !entrada || !salida) return false;
+      const d = new Date(dateStr + "T12:00:00");
+      const start = new Date(entrada + "T12:00:00");
+      const end = new Date(salida + "T12:00:00");
+      return d > start && d < end;
+    };
+
+    return (
+      <div className="space-y-3 font-sans select-none p-3.5">
+        {/* Calendar Mini Header */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-neutral-300 uppercase tracking-wide">
+            {monthLabel}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setCalendarViewDate(new Date(year, month - 1, 1))}
+              className="p-1 hover:bg-neutral-800 rounded text-neutral-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setCalendarViewDate(new Date(year, month + 1, 1))}
+              className="p-1 hover:bg-neutral-800 rounded text-neutral-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+            </button>
+          </div>
+        </div>
+
+        {/* Days of week header */}
+        <div className="grid grid-cols-7 gap-1 text-center border-b border-neutral-850 pb-1">
+          {["L", "M", "M", "J", "V", "S", "D"].map((d, idx) => (
+            <span key={idx} className="text-[10px] font-extrabold text-neutral-500 uppercase tracking-wider">
+              {d}
+            </span>
+          ))}
+        </div>
+
+        {/* Grid Cells */}
+        <div className="grid grid-cols-7 gap-1 text-center">
+          {daysList.map((item, idx) => {
+            const isSelectedIn = entrada === item.dateString;
+            const isSelectedOut = salida === item.dateString;
+            const inRange = isDateInRange(item.dateString);
+            
+            let cellStyle = "text-neutral-700 cursor-default";
+            if (item.isCurrent) {
+              cellStyle = "text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer";
+              if (isSelectedIn) {
+                cellStyle = "bg-[#4a634e] text-white font-bold rounded-lg scale-105 shadow-md shadow-emerald-950/30 cursor-pointer";
+              } else if (isSelectedOut) {
+                cellStyle = "bg-[#4a634e] text-white font-bold rounded-lg scale-105 shadow-md shadow-emerald-950/30 cursor-pointer";
+              } else if (inRange) {
+                cellStyle = "bg-[#4a634e]/20 text-[#b2ceb4] font-semibold rounded-md cursor-pointer";
+              }
+            }
+
+            return (
+              <div
+                key={idx}
+                onClick={() => item.dateString && handleDayClick(item.dateString)}
+                className={`h-7 flex items-center justify-center text-xs rounded transition-all ${cellStyle}`}
+              >
+                {item.day}
+              </div>
+            );
+          })}
+        </div>
+        
+        {/* Help label */}
+        {isEditMode && (
+          <div className="text-[10px] text-neutral-500 font-medium text-center italic mt-1">
+            {!entrada ? "Paso 1: Selecciona la fecha de entrada" : !salida ? "Paso 2: Selecciona la fecha de salida" : "Estadía seleccionada. Vuelve a hacer clic para reiniciar."}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderBookingDateCalendar = () => {
+    const year = bookingDateCalendarViewDate.getFullYear();
+    const month = bookingDateCalendarViewDate.getMonth();
+    
+    // Month name in Spanish
+    const monthNames = [
+      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+    ];
+    const monthLabel = `${monthNames[month]} ${year}`;
+
+    const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Sun, 1 = Mon...
+    const offset = firstDayIndex === 0 ? 6 : firstDayIndex - 1; // Mon = 0
+    const totalDays = new Date(year, month + 1, 0).getDate();
+
+    const daysList = [];
+    // Prev month tail
+    const prevMonthDaysCount = new Date(year, month, 0).getDate();
+    for (let i = offset - 1; i >= 0; i--) {
+      daysList.push({
+        day: prevMonthDaysCount - i,
+        isCurrent: false,
+        dateString: ""
+      });
+    }
+    // Current month days
+    for (let i = 1; i <= totalDays; i++) {
+      const dateString = `${year}-${(month + 1).toString().padStart(2, "0")}-${i.toString().padStart(2, "0")}`;
+      daysList.push({
+        day: i,
+        isCurrent: true,
+        dateString
+      });
+    }
+    // Next month tail to pad to 42 cells
+    const nextOffset = 42 - daysList.length;
+    for (let i = 1; i <= nextOffset; i++) {
+      daysList.push({
+        day: i,
+        isCurrent: false,
+        dateString: ""
+      });
+    }
+
+    const handleDayClick = (dateStr: string) => {
+      if (!isEditMode || !dateStr) return;
+      setFechaReserva(dateStr);
+      setIsBookingDateCalendarExpanded(false); // Close calendar popover immediately on selection
+    };
+
+    return (
+      <div className="space-y-3 font-sans select-none p-3.5">
+        {/* Calendar Mini Header */}
+        <div className="flex items-center justify-between">
+          <span className="text-xs font-bold text-neutral-300 uppercase tracking-wide">
+            {monthLabel}
+          </span>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={() => setBookingDateCalendarViewDate(new Date(year, month - 1, 1))}
+              className="p-1 hover:bg-neutral-800 rounded text-neutral-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setBookingDateCalendarViewDate(new Date(year, month + 1, 1))}
+              className="p-1 hover:bg-neutral-800 rounded text-neutral-400 hover:text-white transition-colors cursor-pointer"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 rotate-180" />
+            </button>
+          </div>
+        </div>
+
+        {/* Days of week header */}
+        <div className="grid grid-cols-7 gap-1 text-center border-b border-neutral-850 pb-1">
+          {["L", "M", "M", "J", "V", "S", "D"].map((d, idx) => (
+            <span key={idx} className="text-[10px] font-extrabold text-neutral-500 uppercase tracking-wider">
+              {d}
+            </span>
+          ))}
+        </div>
+
+        {/* Grid Cells */}
+        <div className="grid grid-cols-7 gap-1 text-center">
+          {daysList.map((item, idx) => {
+            const isSelected = fechaReserva === item.dateString;
+            
+            let cellStyle = "text-neutral-700 cursor-default";
+            if (item.isCurrent) {
+              cellStyle = "text-neutral-300 hover:bg-neutral-800 hover:text-white cursor-pointer";
+              if (isSelected) {
+                cellStyle = "bg-[#4a634e] text-white font-bold rounded-lg scale-105 shadow-md shadow-emerald-950/30 cursor-pointer";
+              }
+            }
+
+            return (
+              <div
+                key={idx}
+                onClick={() => item.dateString && handleDayClick(item.dateString)}
+                className={`h-7 flex items-center justify-center text-xs rounded transition-all ${cellStyle}`}
+              >
+                {item.day}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!clienteId || !cabanaId) return;
 
+    if (isClientBlockedOrSuspended) {
+      alert("Error: El cliente seleccionado se encuentra bloqueado o suspendido. No se puede realizar la reserva.");
+      return;
+    }
+
+    if (isCabinNotAvailable) {
+      if (hasStayOverlapConflict) {
+        alert("Error: La cabaña seleccionada ya se encuentra reservada para las fechas indicadas.");
+      } else if (isCabinInMaintenance) {
+        alert("Error: La cabaña seleccionada se encuentra en mantenimiento. No se pueden realizar reservas.");
+      } else {
+        alert("Error: La cabaña seleccionada no está disponible.");
+      }
+      return;
+    }
+
+    if (hasDateError) {
+      alert("Error: Error en la fecha ingresada. Verifique que la fecha de entrada sea hoy o en el futuro, y que la fecha de salida sea posterior a la de entrada.");
+      return;
+    }
+
+    if (exceedsCapacity) {
+      alert(`Error: La cantidad de pasajeros ingresada (${pasajeros}) excede la capacidad máxima de la cabaña "${selectedCabinObj?.nombre}" (${selectedCabinObj?.capacidad} personas).`);
+      return;
+    }
+
     const newBooking: Reserva = {
       id: bookingId,
       clienteId,
       cabanaId,
-      fechaReserva: new Date().toISOString().split("T")[0],
+      fechaReserva,
       checkIn: entrada,
       checkOut: salida,
-      noches: nochesCalculated,
+      noches,
       cantidadPersonas: pasajeros,
       canalVentas,
-      montoTotal: Number(montoTotal) || 0,
-      montoAnticipo: Number(montoAnticipo) || 0,
+      montoTotal: (Number(montoTotal) || 0) / 1000,
+      montoAnticipo: (Number(montoAnticipo) || 0) / 1000,
       estadoReserva,
       metodoPago,
     };
 
+    alert(existingBooking ? "¡Reserva actualizada satisfactoriamente!" : "¡Reserva registrada satisfactoriamente!");
     onSave(newBooking);
     onBack();
   };
@@ -108,10 +507,10 @@ export default function BookingForm({
             Volver
           </button>
           <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
-            Nueva Reserva
+            {existingBooking ? "Consulta de reserva" : "Nueva Reserva"}
           </h2>
           <p className="text-neutral-400 font-sans text-sm mt-1 font-medium">
-            información de la nueva reserva
+            {existingBooking ? "Información detallada de la reserva seleccionada" : "información de la nueva reserva"}
           </p>
         </div>
 
@@ -127,28 +526,57 @@ export default function BookingForm({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Section: Customer & Unit selection */}
           <div className="lg:col-span-7 bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-            <h3 className="text-lg font-sans font-bold text-neutral-100 pb-2 border-b border-neutral-850 flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-[#f6bb89]" />
-              Cliente y Unidad
+            <h3 className="text-lg font-sans font-bold text-neutral-100 pb-2 border-b border-neutral-850 flex flex-col md:flex-row md:items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-[#f6bb89]" />
+                <span>Cliente y Unidad</span>
+              </div>
+              <div className="flex flex-col items-end gap-1.5">
+                {isClientBlockedOrSuspended && (
+                  <span className="text-[10px] font-sans font-bold bg-red-950/45 text-red-400 border border-red-900/40 px-3 py-1 rounded-full animate-pulse shadow-md shadow-red-950/20 block text-right">
+                    ⚠️ Cliente suspendido o bloqueado, no puede realizar reservas
+                  </span>
+                )}
+                {isCabinNotAvailable && (
+                  <span className={`text-[10px] font-sans font-bold border px-3 py-1 rounded-full animate-pulse shadow-md block text-right ${
+                    hasStayOverlapConflict
+                      ? "bg-red-950/45 text-red-400 border-red-900/40 shadow-red-950/20"
+                      : "bg-amber-950/45 text-amber-400 border-amber-900/40 shadow-amber-950/20"
+                  }`}>
+                    ⚠️ {hasStayOverlapConflict ? "Cabaña ya reservada" : "Cabaña en mantención"}
+                  </span>
+                )}
+                {hasDateError && (
+                  <span className="text-[10px] font-sans font-bold bg-red-950/45 text-red-400 border border-red-900/40 px-3 py-1 rounded-full animate-pulse shadow-md shadow-red-950/20 block text-right">
+                    ⚠️ Error en la fecha ingresada
+                  </span>
+                )}
+                {exceedsCapacity && (
+                  <span className="text-[10px] font-sans font-bold bg-red-950/45 text-red-400 border border-red-900/40 px-3 py-1 rounded-full animate-pulse shadow-md shadow-red-950/20 block text-right">
+                    ⚠️ Excede la cantidad máxima de personas
+                  </span>
+                )}
+              </div>
             </h3>
 
             <div className="space-y-5">
               {/* Select guest */}
               <div className="space-y-1">
                 <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                  Seleccionar Huésped
+                  Seleccionar Cliente
                 </label>
                 <div className="relative">
                   <select
                     required
                     value={clienteId}
                     onChange={(e) => setClienteId(e.target.value)}
-                    className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none"
+                    disabled={!isEditMode}
+                    className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     <option value="">Buscar un cliente existente...</option>
                     {clientes.map((c) => (
                       <option key={c.id} value={c.id}>
-                        {c.nombre} {c.apellido} — {c.numeroDocumento} {c.id === "CLI-2024-AUTO" ? "(AUTO)" : ""}
+                        {c.nombre} {c.apellido} — {c.numeroDocumento} {c.id === "CLI-2026-AUTO" ? "(AUTO)" : ""}
                       </option>
                     ))}
                   </select>
@@ -161,44 +589,87 @@ export default function BookingForm({
                 </div>
               </div>
 
-              {/* Select cabin */}
-              <div className="space-y-1">
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                  Cabaña (Selección de Unidad)
-                </label>
-                <div className="relative">
-                  <select
-                    required
-                    value={cabanaId}
-                    onChange={(e) => setCabanaId(e.target.value)}
-                    className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none"
-                  >
-                    <option value="">Elegir una propiedad...</option>
-                    {cabanas.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nombre} (Capacidad: {c.capacidad} Pers.) — ${c.precioBase}/Noche
-                      </option>
-                    ))}
-                  </select>
-                  <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
-                    cottage
-                  </span>
-                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                    expand_more
-                  </span>
+              {/* Cabin & Stay duration row */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                <div className="space-y-1 md:col-span-2">
+                  <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
+                    Cabaña (Selección de Unidad)
+                  </label>
+                  <div className="relative">
+                    <select
+                      required
+                      value={cabanaId}
+                      onChange={(e) => setCabanaId(e.target.value)}
+                      disabled={!isEditMode}
+                      className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed h-11"
+                    >
+                      <option value="">Elegir una propiedad...</option>
+                      {cabanas.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.nombre} (Capacidad: {c.capacidad} Pers.) — ${(c.precioBase * 1000).toLocaleString("es-CL")}/Noche
+                        </option>
+                      ))}
+                    </select>
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
+                      cottage
+                    </span>
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                      expand_more
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
+                    Cantidad de Días
+                  </label>
+                  <div className="flex items-center bg-[#121412] border border-neutral-700 rounded-lg overflow-hidden h-11">
+                    <button
+                      type="button"
+                      disabled={!isEditMode}
+                      onClick={() => setNoches((n) => Math.max(1, n - 1))}
+                      className="px-4 text-[#b2ceb4] hover:bg-neutral-850 text-2xl font-bold h-full border-r border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      -
+                    </button>
+                    <span className="flex-1 text-center font-bold text-xl text-neutral-100 select-none">
+                      {noches}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={!isEditMode}
+                      onClick={() => setNoches((n) => Math.min(30, n + 1))}
+                      className="px-4 text-[#b2ceb4] hover:bg-neutral-850 text-2xl font-bold h-full border-l border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      +
+                    </button>
+                  </div>
                 </div>
               </div>
 
               {/* Booking date & Head count passengers counter */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <div className="space-y-1">
+                <div className="space-y-1 relative">
                   <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
                     Fecha de Reserva
                   </label>
-                  <div className="relative bg-[#121412]/60 border border-neutral-800 rounded-lg p-3 text-xs font-medium text-neutral-500 select-none flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-neutral-600" />
-                    <span>2024-05-20 (MOCK)</span>
+                  <div
+                    onClick={toggleBookingDateCalendar}
+                    className="p-3 bg-[#121412] border-l-4 border-[#b2ceb4] rounded-r-lg relative cursor-pointer select-none hover:border-neutral-600 transition-all h-11 flex items-center justify-between"
+                    title="Haga clic para seleccionar la fecha de reserva"
+                  >
+                    <span className="text-xs font-bold text-neutral-200">
+                      {fechaReserva || "Seleccionar..."}
+                    </span>
+                    <Calendar className="w-3.5 h-3.5 text-white" />
                   </div>
+
+                  {/* Collapsible Calendar Grid Popover for Booking Date (Discreet absolute overlay) */}
+                  {isBookingDateCalendarExpanded && (
+                    <div className="absolute z-50 left-0 right-0 top-[64px] bg-[#121412] border border-neutral-800 rounded-xl shadow-2xl shadow-black/90">
+                      {renderBookingDateCalendar()}
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -208,8 +679,9 @@ export default function BookingForm({
                   <div className="flex items-center bg-[#121412] border border-neutral-700 rounded-lg overflow-hidden h-11">
                     <button
                       type="button"
+                      disabled={!isEditMode}
                       onClick={() => setPasajeros((p) => Math.max(1, p - 1))}
-                      className="px-4 text-[#b2ceb4] hover:bg-neutral-800 text-2xl font-bold h-full border-r border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none"
+                      className="px-4 text-[#b2ceb4] hover:bg-neutral-850 text-2xl font-bold h-full border-r border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       -
                     </button>
@@ -218,8 +690,9 @@ export default function BookingForm({
                     </span>
                     <button
                       type="button"
+                      disabled={!isEditMode}
                       onClick={() => setPasajeros((p) => Math.min(10, p + 1))}
-                      className="px-4 text-[#b2ceb4] hover:bg-neutral-800 text-2xl font-bold h-full border-l border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none"
+                      className="px-4 text-[#b2ceb4] hover:bg-neutral-850 text-2xl font-bold h-full border-l border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       +
                     </button>
@@ -237,31 +710,50 @@ export default function BookingForm({
             </h3>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 bg-[#121412] border-l-4 border-[#f6bb89] rounded-r-lg">
-                  <span className="block text-[10px] font-sans font-bold text-[#f6bb89] uppercase mb-1">
-                    ENTRADA
-                  </span>
-                  <input
-                    type="date"
-                    value={entrada}
-                    onChange={(e) => setEntrada(e.target.value)}
-                    className="w-full bg-transparent text-sm font-bold text-neutral-100 outline-none select-none border-none p-0 focus:ring-0"
-                  />
+              <div className="relative">
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Clickable ENTRADA trigger box */}
+                  <div
+                    onClick={toggleStayCalendar}
+                    className="p-3 bg-[#121412] border-l-4 border-[#f6bb89] rounded-r-lg relative cursor-pointer select-none hover:border-neutral-600 transition-all"
+                    title="Haga clic para seleccionar fechas en el calendario"
+                  >
+                    <span className="block text-[10px] font-sans font-bold text-[#f6bb89] uppercase mb-1">
+                      ENTRADA
+                    </span>
+                    <span className="text-sm font-bold text-neutral-100 block pr-6">
+                      {entrada || "Seleccionar..."}
+                    </span>
+                    <Calendar className="w-3.5 h-3.5 text-white absolute right-3 bottom-3" />
+                  </div>
+
+                  {/* Clickable SALIDA trigger box */}
+                  <div
+                    onClick={toggleStayCalendar}
+                    className="p-3 bg-[#121412] border-l-4 border-[#f6bb89]/40 rounded-r-lg relative cursor-pointer select-none hover:border-neutral-600 transition-all"
+                    title="Haga clic para seleccionar fechas en el calendario"
+                  >
+                    <span className="block text-[10px] font-sans font-bold text-[#f6bb89]/70 uppercase mb-1">
+                      SALIDA
+                    </span>
+                    <span className="text-sm font-bold text-neutral-100 block pr-6">
+                      {salida || "Seleccionar..."}
+                    </span>
+                    <Calendar className="w-3.5 h-3.5 text-white absolute right-3 bottom-3" />
+                  </div>
                 </div>
 
-                <div className="p-3 bg-[#121412] border-l-4 border-[#f6bb89]/40 rounded-r-lg">
-                  <span className="block text-[10px] font-sans font-bold text-[#f6bb89]/70 uppercase mb-1">
-                    SALIDA
-                  </span>
-                  <input
-                    type="date"
-                    value={salida}
-                    onChange={(e) => setSalida(e.target.value)}
-                    className="w-full bg-transparent text-sm font-bold text-neutral-100 outline-none select-none border-none p-0 focus:ring-0"
-                  />
-                </div>
+                {/* Collapsible Calendar Grid Popover (Discreet absolute overlay) */}
+                {isCalendarExpanded && (
+                  <div className="absolute z-50 left-0 right-0 top-[74px] bg-[#121412] border border-neutral-800 rounded-xl shadow-2xl shadow-black/90">
+                    {renderMiniCalendar()}
+                  </div>
+                )}
               </div>
+
+              {/* Hidden HTML input fields for accessibility/compatibility */}
+              <input type="hidden" name="checkIn" value={entrada} />
+              <input type="hidden" name="checkOut" value={salida} />
 
               {/* Nights indicator pill block */}
               <div className="flex items-center justify-center py-2.5 px-4 bg-[#121412] border border-neutral-800 rounded-full">
@@ -269,7 +761,7 @@ export default function BookingForm({
                   Duración total:{" "}
                 </span>
                 <span className="ml-2 font-bold font-sans text-xs text-[#b2ceb4]">
-                  {nochesCalculated} Noches
+                  {noches} Días
                 </span>
               </div>
 
@@ -282,7 +774,8 @@ export default function BookingForm({
                   <select
                     value={canalVentas}
                     onChange={(e) => setCanalVentas(e.target.value as any)}
-                    className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-semibold outline-none appearance-none"
+                    disabled={!isEditMode}
+                    className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     <option value="Directo">Directo</option>
                     <option value="Airbnb">Airbnb</option>
@@ -312,7 +805,7 @@ export default function BookingForm({
             {/* Monto Total */}
             <div className="space-y-1">
               <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide">
-                Monto Total (USD)
+                Monto Total ($)
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-[#b2ceb4] text-sm">$</span>
@@ -322,7 +815,8 @@ export default function BookingForm({
                   placeholder="0.00"
                   value={montoTotal}
                   onChange={(e) => setMontoTotal(e.target.value)}
-                  className="w-full pl-7 pr-4 bg-[#121412] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-sm font-bold outline-none"
+                  disabled={!isEditMode}
+                  className="w-full pl-7 pr-4 bg-[#121412] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-sm font-bold outline-none disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -330,7 +824,7 @@ export default function BookingForm({
             {/* Monto Anticipo */}
             <div className="space-y-1">
               <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide">
-                Monto Anticipo / Depósito (USD)
+                Monto Anticipo / Depósito ($)
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-neutral-500 text-sm">$</span>
@@ -340,7 +834,8 @@ export default function BookingForm({
                   placeholder="0.00"
                   value={montoAnticipo}
                   onChange={(e) => setMontoAnticipo(e.target.value)}
-                  className="w-full pl-7 pr-4 bg-[#121412] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-sm font-bold outline-none"
+                  disabled={!isEditMode}
+                  className="w-full pl-7 pr-4 bg-[#121412] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-sm font-bold outline-none disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
@@ -354,12 +849,11 @@ export default function BookingForm({
                 <select
                   value={estadoReserva}
                   onChange={(e) => setEstadoReserva(e.target.value as any)}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-semibold outline-none appearance-none"
+                  disabled={!isEditMode}
+                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
                 >
-                  <option value="Confirmada">Confirmada</option>
                   <option value="Pendiente de Pago">Pendiente de Pago</option>
                   <option value="Cancelada">Cancelada</option>
-                  <option value="En Espera">En Espera</option>
                 </select>
                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
                   expand_more
@@ -376,7 +870,8 @@ export default function BookingForm({
                 <select
                   value={metodoPago}
                   onChange={(e) => setMetodoPago(e.target.value as any)}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-semibold outline-none appearance-none"
+                  disabled={!isEditMode}
+                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
                 >
                   <option value="Efectivo">Efectivo</option>
                   <option value="Tarjeta">Tarjeta</option>
@@ -392,21 +887,68 @@ export default function BookingForm({
 
         {/* Action triggers */}
         <div className="flex flex-row gap-4 pt-6 border-t border-neutral-900">
-          <button
-            id="submit-new-booking"
-            type="submit"
-            className="flex-1 py-4 bg-[#4a634e] text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg hover:brightness-110 active:scale-95 transition-all text-xs font-sans uppercase tracking-widest cursor-pointer"
-          >
-            <Save className="w-4 h-4 ml-1" />
-            Guardar Reserva
-          </button>
-          <button
-            type="button"
-            onClick={onBack}
-            className="flex-1 py-4 bg-neutral-900 hover:bg-neutral-850 text-neutral-400 font-bold rounded-xl flex items-center justify-center gap-2 border border-neutral-800 transition-all text-xs font-sans uppercase tracking-widest cursor-pointer"
-          >
-            Cancelar
-          </button>
+          {viewBookingId ? (
+            <>
+              {/* Button: Guardar */}
+              <button
+                id="submit-existing-booking"
+                type="submit"
+                disabled={isFormDisabled}
+                className="flex-1 py-4 bg-[#4a634e] text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg hover:brightness-110 active:scale-95 transition-all text-xs font-sans uppercase tracking-widest cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Save className="w-4 h-4 ml-1" />
+                Guardar
+              </button>
+
+              {/* Button: Borrar */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (window.confirm("¿Está seguro de que desea eliminar esta reserva de forma permanente?")) {
+                    if (onDelete && viewBookingId) {
+                      onDelete(viewBookingId);
+                      onBack();
+                    }
+                  }
+                }}
+                className="flex-1 py-4 bg-red-950/30 text-red-400 hover:bg-red-900/30 hover:text-red-200 border border-red-900/40 font-bold rounded-xl flex items-center justify-center gap-2 transition-all text-xs font-sans uppercase tracking-widest cursor-pointer"
+              >
+                <Trash2 className="w-4 h-4" />
+                Borrar
+              </button>
+
+              {/* Button: Cancelar */}
+              <button
+                type="button"
+                onClick={onBack}
+                className="flex-1 py-4 bg-neutral-900 hover:bg-neutral-850 text-neutral-400 font-bold rounded-xl flex items-center justify-center gap-2 border border-neutral-850 transition-all text-xs font-sans uppercase tracking-widest cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <>
+              {/* Button: Guardar for new booking */}
+              <button
+                id="submit-new-booking"
+                type="submit"
+                disabled={isFormDisabled}
+                className="flex-1 py-4 bg-[#4a634e] text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg hover:brightness-110 active:scale-95 transition-all text-xs font-sans uppercase tracking-widest cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <Save className="w-4 h-4 ml-1" />
+                Guardar
+              </button>
+
+              {/* Button: Cancelar for new booking */}
+              <button
+                type="button"
+                onClick={onBack}
+                className="flex-1 py-4 bg-neutral-900 hover:bg-neutral-850 text-neutral-400 font-bold rounded-xl flex items-center justify-center gap-2 border border-neutral-850 transition-all text-xs font-sans uppercase tracking-widest cursor-pointer"
+              >
+                Cancelar
+              </button>
+            </>
+          )}
         </div>
       </form>
     </motion.div>

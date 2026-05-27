@@ -6,45 +6,73 @@
 import { useState, useEffect, FormEvent } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, Save, Link as LinkIcon, DollarSign } from "lucide-react";
-import { Cliente, Servicio, Reserva, ContratacionServicio } from "../types";
+import { Cabana, Cliente, Servicio, Reserva, ContratacionServicio } from "../types";
 
 interface ServiceContractFormProps {
   clientes: Cliente[];
   servicios: Servicio[];
   reservas: Reserva[];
+  cabanas: Cabana[];
   onSave: (contract: ContratacionServicio) => void;
   onBack: () => void;
 }
 
-export default function ServiceContractForm({ clientes, servicios, reservas, onSave, onBack }: ServiceContractFormProps) {
+export default function ServiceContractForm({ clientes, servicios, reservas, cabanas, onSave, onBack }: ServiceContractFormProps) {
   const [reservaId, setReservaId] = useState("");
   const [clienteId, setClienteId] = useState("");
   const [servicioId, setServicioId] = useState("");
-  const [fecha, setFecha] = useState("2024-05-20");
+  const [fecha, setFecha] = useState(() => new Date().toISOString().split("T")[0]);
   const [precioPactado, setPrecioPactado] = useState("");
   const [cantidad, setCantidad] = useState("1");
   const [estadoPago, setEstadoPago] = useState<"Pendiente" | "Parcial" | "Pagado">("Pendiente");
   const [medioPago, setMedioPago] = useState<"Transferencia" | "Efectivo" | "Tarjeta">("Transferencia");
 
-  // Auto assign client when reserva is selected
-  useEffect(() => {
-    if (reservaId) {
-      const bk = reservas.find((r) => r.id === reservaId);
+  // Service validation state
+  const selectedServiceObj = servicios.find((s) => s.id === servicioId);
+  const isServiceInMaintenance = selectedServiceObj?.estado === "Mantenimiento";
+  const isServiceActive = selectedServiceObj ? selectedServiceObj.estado === "Activo" : true;
+
+  // Filter clients to only those who have at least one active (not Cancelled) reservation
+  const clientsWithActiveReservas = clientes.filter((c) =>
+    (reservas || []).some((r) => r.clienteId === c.id && r.estadoReserva !== "Cancelada")
+  );
+
+  // Explicit event-driven handlers to avoid coupled useEffect loops
+  const handleClienteChange = (val: string) => {
+    setClienteId(val);
+    if (val) {
+      const bk = (reservas || []).find((r) => r.clienteId === val && r.estadoReserva !== "Cancelada");
+      if (bk) {
+        setReservaId(bk.id);
+      } else {
+        setReservaId("");
+      }
+    } else {
+      setReservaId("");
+    }
+  };
+
+  const handleReservaChange = (val: string) => {
+    setReservaId(val);
+    if (val) {
+      const bk = reservas.find((r) => r.id === val);
       if (bk) {
         setClienteId(bk.clienteId);
       }
     }
-  }, [reservaId, reservas]);
+  };
 
-  // Auto load service price when service is selected
-  useEffect(() => {
-    if (servicioId) {
-      const srv = servicios.find((s) => s.id === servicioId);
+  const handleServicioChange = (val: string) => {
+    setServicioId(val);
+    if (val) {
+      const srv = servicios.find((s) => s.id === val);
       if (srv) {
         setPrecioPactado(srv.precio.toString());
       }
+    } else {
+      setPrecioPactado("");
     }
-  }, [servicioId, servicios]);
+  };
 
   const autoId = `CON-${Math.floor(100 + Math.random() * 900)}`;
 
@@ -56,6 +84,11 @@ export default function ServiceContractForm({ clientes, servicios, reservas, onS
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!reservaId || !clienteId || !servicioId) return;
+
+    if (selectedServiceObj && selectedServiceObj.estado !== "Activo") {
+      alert(`Error: El servicio seleccionado no se encuentra activo (Estado: ${selectedServiceObj.estado}).`);
+      return;
+    }
 
     const newContractValue: ContratacionServicio = {
       id: autoId,
@@ -70,6 +103,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, onS
       medioPago,
     };
 
+    alert("¡Contratación de servicio guardada satisfactoriamente!");
     onSave(newContractValue);
     onBack();
   };
@@ -95,52 +129,24 @@ export default function ServiceContractForm({ clientes, servicios, reservas, onS
         <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
           Contratar Servicio
         </h2>
-        <p className="text-neutral-400 font-sans text-sm mt-1">
-          Vincule servicios adicionales a una reserva existente en el complejo turístico.
-        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 pb-20">
         {/* Section 1: Detalles del Vínculo */}
         <section className="bg-[#1b1e1b] rounded-xl p-6 border-t-2 border-[#D29B6C] border-x border-b border-neutral-850 shadow-md space-y-5">
-          <h3 className="text-base font-sans font-bold text-neutral-100 flex items-center gap-2 pb-2 border-b border-neutral-850">
-            <LinkIcon className="w-4.5 h-4.5 text-[#f6bb89]" />
-            Detalles del Vínculo
+          <h3 className="text-base font-sans font-bold text-neutral-100 flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-neutral-850">
+            <div className="flex items-center gap-2">
+              <LinkIcon className="w-4.5 h-4.5 text-[#f6bb89]" />
+              <span>Detalles del Vínculo</span>
+            </div>
+            {selectedServiceObj && selectedServiceObj.estado !== "Activo" && (
+              <span className="text-[10px] font-sans font-bold bg-red-950/45 text-red-400 border border-red-900/40 px-3 py-1 rounded-full animate-pulse shadow-md shadow-red-950/20 block text-right">
+                ⚠️ Servicio no activo (Estado: {selectedServiceObj.estado})
+              </span>
+            )}
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Select Reserva ID */}
-            <div className="space-y-1">
-              <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                ID Reserva servicio
-              </label>
-              <div className="relative">
-                <select
-                  required
-                  value={reservaId}
-                  onChange={(e) => setReservaId(e.target.value)}
-                  className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-semibold outline-none appearance-none"
-                >
-                  <option value="">Seleccione una reserva...</option>
-                  {reservas.map((r) => {
-                    const client = clientes.find((c) => c.id === r.clienteId);
-                    const clientName = client ? `${client.nombre} ${client.apellido}` : "Desconocido";
-                    return (
-                      <option key={r.id} value={r.id}>
-                        {r.id} ({clientName})
-                      </option>
-                    );
-                  })}
-                </select>
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-550 text-sm">
-                  confirmation_number
-                </span>
-                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                  expand_more
-                </span>
-              </div>
-            </div>
-
             {/* Seleccionar Cliente (Auto filled or selected) */}
             <div className="space-y-1">
               <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
@@ -150,11 +156,11 @@ export default function ServiceContractForm({ clientes, servicios, reservas, onS
                 <select
                   required
                   value={clienteId}
-                  onChange={(e) => setClienteId(e.target.value)}
+                  onChange={(e) => handleClienteChange(e.target.value)}
                   className="w-full pl-10 pr-10 bg-[#121412] text-[#e2e3df] border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs outline-none appearance-none cursor-pointer"
                 >
                   <option value="">Buscar cliente...</option>
-                  {clientes.map((c) => (
+                  {clientsWithActiveReservas.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.nombre} {c.apellido}
                     </option>
@@ -162,6 +168,40 @@ export default function ServiceContractForm({ clientes, servicios, reservas, onS
                 </select>
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
                   person
+                </span>
+                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                  expand_more
+                </span>
+              </div>
+            </div>
+
+            {/* Select Reserva ID */}
+            <div className="space-y-1">
+              <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
+                IDE Reserva Cabaña
+              </label>
+              <div className="relative">
+                <select
+                  required
+                  value={reservaId}
+                  onChange={(e) => handleReservaChange(e.target.value)}
+                  className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-semibold outline-none appearance-none"
+                >
+                  <option value="">Seleccione una reserva...</option>
+                  {reservas
+                    .filter((r) => r.estadoReserva !== "Cancelada" && (!clienteId || r.clienteId === clienteId))
+                    .map((r) => {
+                      const cabin = cabanas.find((c) => c.id === r.cabanaId);
+                      const cabinName = cabin ? cabin.nombre : "Cabaña Desconocida";
+                      return (
+                        <option key={r.id} value={r.id}>
+                          {r.id} ({cabinName})
+                        </option>
+                      );
+                    })}
+                </select>
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-550 text-sm">
+                  confirmation_number
                 </span>
                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
                   expand_more
@@ -178,7 +218,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, onS
                 <select
                   required
                   value={servicioId}
-                  onChange={(e) => setServicioId(e.target.value)}
+                  onChange={(e) => handleServicioChange(e.target.value)}
                   className="w-full pl-10 pr-10 bg-[#121412] text-[#e2e3df] border border-neutral-700/80 focus:border-[#b2ceb4] rounded-lg p-3 text-xs outline-none appearance-none cursor-pointer"
                 >
                   <option value="">Buscar servicio...</option>
@@ -329,7 +369,8 @@ export default function ServiceContractForm({ clientes, servicios, reservas, onS
           <button
             id="submit-contract-service"
             type="submit"
-            className="md:px-8 py-3.5 bg-[#4a634e] text-white rounded-lg font-sans font-bold text-xs uppercase tracking-widest shadow-lg hover:brightness-110 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+            disabled={!reservaId || !clienteId || !servicioId}
+            className="md:px-8 py-3.5 bg-[#4a634e] text-white rounded-lg font-sans font-bold text-xs uppercase tracking-widest shadow-lg hover:brightness-110 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
             <Save className="w-4 h-4" />
             Guardar Contratación

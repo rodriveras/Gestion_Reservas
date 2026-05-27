@@ -27,7 +27,7 @@ export default function CabinForm({ onSave, onBack }: CabinFormProps) {
   const [imagenUrl, setImagenUrl] = useState("");
   const [coordenadas, setCoordenadas] = useState("-41.13, -71.30");
 
-  const autoId = `CAB-2024-${Math.floor(100 + Math.random() * 900)}`;
+  const autoId = `CAB-2026-${Math.floor(100 + Math.random() * 900)}`;
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -50,6 +50,7 @@ export default function CabinForm({ onSave, onBack }: CabinFormProps) {
       lng: Number(coordenadas.split(",")[1]) || -71.305,
     };
 
+    alert("¡Cabaña guardada satisfactoriamente!");
     onSave(newCabin);
     onBack();
   };
