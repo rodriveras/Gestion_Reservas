@@ -32,7 +32,8 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
 
   const [selectedCabinSegment, setSelectedCabinSegment] = useState<string | null>(null);
   const [selectedChannelSegment, setSelectedChannelSegment] = useState<string | null>(null);
-  const [selectedYear, setSelectedYear] = useState<number | "Todos">("Todos");
+  const [selectedYear, setSelectedYear] = useState<number | "Todos">(2026); // Default to 2026 matching mockup
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(5); // June by default
 
   // Filter bookings and service contracts to only those belonging to the selected year,
   // and exclude cancelled reservations.
@@ -151,7 +152,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
       })
     : [];
 
-  const monthNames = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
+  const monthNames = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SET", "OCT", "NOV", "DIC"];
   const monthlyValues: { [key: number]: number } = {};
 
   // Distribute booking values dynamically
@@ -174,19 +175,49 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
     }
   });
 
-  // Extract only the months that have actual sales (> 0)
-  const activeMonths = Object.keys(monthlyValues)
-    .map((mStr) => {
-      const m = parseInt(mStr, 10);
-      return {
-        monthIndex: m,
-        name: monthNames[m],
-        value: monthlyValues[m],
-      };
-    })
-    .sort((a, b) => a.monthIndex - b.monthIndex);
+  const allMonths = monthNames.map((name, index) => {
+    return {
+      monthIndex: index,
+      name,
+      value: monthlyValues[index] || 0,
+    };
+  });
+  const totalAnnual = allMonths.reduce((acc, m) => acc + m.value, 0);
+  const maxIncome = Math.max(...allMonths.map((d) => d.value)) || 1;
 
-  const maxIncome = Math.max(...activeMonths.map((d) => d.value)) || 1;
+  const monthFullNames = [
+    "Enero",
+    "Febrero",
+    "Marzo",
+    "Abril",
+    "Mayo",
+    "Junio",
+    "Julio",
+    "Agosto",
+    "Septiembre",
+    "Octubre",
+    "Noviembre",
+    "Diciembre"
+  ];
+
+  const monthColors: { [key: string]: string } = {
+    ENE: "#e0536c",
+    FEB: "#c82b7b",
+    MAR: "#884fc6",
+    ABR: "#7844dc",
+    MAY: "#544ee3",
+    JUN: "#3b82f6",
+    JUL: "#0ea5e9",
+    AGO: "#06b6d4",
+    SET: "#0d9488",
+    OCT: "#10b981",
+    NOV: "#f59e0b",
+    DIC: "#ea580c"
+  };
+
+  const formatNumber = (val: number) => {
+    return new Intl.NumberFormat("es-CL", { maximumFractionDigits: 0 }).format(val);
+  };
 
   const getBarGradient = (month: string) => {
     // ENE, FEB, DIC (Verano)
@@ -697,21 +728,50 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
       </section>
 
       {/* Monthly Bar Projection Chart */}
-      <section className="bg-[#1b1e1b] rounded-xl border border-neutral-800/20 border-t-2 border-[#D29B6C] p-6 shadow-xl space-y-8">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-neutral-900">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="w-5 h-5 text-cyan-400" />
-            <h3 className="text-lg font-headline font-semibold text-neutral-200">
-              {selectedYear === "Todos"
-                ? "Ingresos Proyectados por Mes (Histórico Acumulado)"
-                : `Ingresos Proyectados por Mes (${selectedYear})`}
+      <section className="bg-[#0c0d0c] rounded-2xl border border-[#d29b6c]/30 p-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)] space-y-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-neutral-900/60">
+          <div className="flex items-center gap-3">
+            <span className="w-9 h-9 rounded-xl bg-cyan-950/40 border border-cyan-800/30 flex items-center justify-center shadow-inner">
+              <svg className="w-5 h-5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+              </svg>
+            </span>
+            <h3 className="text-lg font-headline font-bold text-white tracking-wide">
+              Ingresos Mensuales Totales
             </h3>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
+              AÑO:
+            </span>
+            <div className="relative">
+              <select
+                value={selectedYear}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setSelectedYear(val === "Todos" ? "Todos" : parseInt(val, 10));
+                }}
+                className="bg-[#121412] text-neutral-200 border border-neutral-800 rounded-lg py-1.5 px-3 pr-8 text-xs font-semibold outline-none focus:border-[#d29b6c] cursor-pointer appearance-none shadow-inner"
+                style={{
+                  backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                  backgroundPosition: `right 0.5rem center`,
+                  backgroundSize: `1.25em 1.25em`,
+                  backgroundRepeat: `no-repeat`
+                }}
+              >
+                {[2024, 2025, 2026, "Todos"].map((yr) => (
+                  <option key={yr} value={yr} className="bg-[#121412]">
+                    {yr}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
         {/* Dynamic Bars custom rendered */}
         <div className="pb-2">
-          {activeMonths.length === 0 ? (
+          {totalAnnual === 0 ? (
             <div className="h-64 flex flex-col items-center justify-center border border-dashed border-neutral-800 rounded-xl bg-neutral-900/10 p-6 text-center">
               <span className="text-[#b2ceb4] font-sans font-bold text-sm mb-1">
                 Sin Movimientos Comerciales
@@ -721,31 +781,117 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
               </p>
             </div>
           ) : (
-            <div className="h-64 flex items-end justify-center gap-4 sm:gap-6 px-4 pt-8">
-              {activeMonths.map((d) => {
-                const heightPercent = `${(d.value / maxIncome) * 75 + 10}%`; // dynamic scale, min 10%, max 85%
-                const isJuly = d.name === "JUL";
-                const gradientClass = getBarGradient(d.name);
-                
-                return (
-                  <div key={d.name} className="flex flex-col items-center flex-1 max-w-[80px] gap-3 h-full justify-end group">
-                    <div 
-                      className={`w-full rounded-t-lg transition-all duration-500 relative bg-gradient-to-t ${gradientClass} hover:brightness-110 cursor-pointer`}
-                      style={{ height: heightPercent }}
+            <div className="space-y-6">
+              {/* Bars container */}
+              <div className="h-64 flex items-end justify-between gap-1.5 sm:gap-4 px-4 pt-12">
+                {allMonths.map((d) => {
+                  const isSelected = selectedMonthIndex === d.monthIndex;
+                  const heightPercent = d.value > 0 && maxIncome > 0 ? `${(d.value / maxIncome) * 75 + 15}%` : "0%";
+                  const color = monthColors[d.name];
+                  
+                  return (
+                    <div
+                      key={d.name}
+                      onClick={() => setSelectedMonthIndex(d.monthIndex)}
+                      className="flex flex-col items-center flex-1 max-w-[80px] gap-3 h-full justify-end group cursor-pointer"
                     >
-                      {/* Value label on top of the bar */}
-                      <div className="absolute -top-7 left-1/2 -translate-x-1/2 w-max transition-transform group-hover:scale-105">
-                        <span className={`font-sans text-[10px] font-bold ${isJuly ? "text-[#b2ceb4]" : "text-neutral-300"}`}>
-                          {formatCurrency(d.value).replace("$", "").trim()}
+                      <div className="w-full relative flex flex-col justify-end h-full">
+                        {/* Tooltip bubble on selected or group hover */}
+                        {d.value > 0 && (
+                          <div
+                            className={`absolute -top-10 left-1/2 -translate-x-1/2 transition-all duration-300 pointer-events-none z-25 ${
+                              isSelected
+                                ? "opacity-100 scale-100"
+                                : "opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100"
+                            }`}
+                          >
+                            <div
+                              className={`bg-black text-white rounded-md px-2.5 py-1 text-[10px] font-mono font-bold shadow-lg relative leading-none whitespace-nowrap ${
+                                isSelected
+                                  ? "border border-white/90 shadow-[0_0_8px_rgba(255,255,255,0.2)]"
+                                  : "border border-neutral-800/80"
+                              }`}
+                            >
+                              $${formatNumber(d.value)}
+                              {/* Small triangle arrow at bottom of bubble */}
+                              <div
+                                className={`absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-black rotate-45 ${
+                                  isSelected ? "border-r border-b border-white/90" : "border-r border-b border-neutral-800/80"
+                                }`}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Bar */}
+                        {d.value > 0 && (
+                          <div
+                            className={`w-full rounded-t-[10px] transition-all duration-300 ease-out ${
+                              isSelected
+                                ? "border-2 border-white ring-4 ring-white/10"
+                                : "hover:brightness-110 border border-transparent"
+                            }`}
+                            style={{
+                              height: heightPercent,
+                              backgroundColor: color,
+                              boxShadow: isSelected ? `0 0 20px ${color}50` : "none"
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      {/* Month Label with dynamic bottom line indicator */}
+                      <div className="flex flex-col items-center h-6 justify-start relative w-full">
+                        <span
+                          className="font-sans text-[10px] font-bold tracking-wider uppercase transition-all duration-250"
+                          style={{ color: isSelected ? color : "#a3a3a3" }}
+                        >
+                          {d.name}
                         </span>
+                        {isSelected && (
+                          <span
+                            className="w-4 h-0.5 rounded-full mt-1 animate-pulse"
+                            style={{ backgroundColor: color }}
+                          />
+                        )}
                       </div>
                     </div>
-                    <span className={`font-sans text-[10px] font-bold tracking-wider uppercase ${isJuly ? "text-[#b2ceb4] pb-0.5 border-b-2 border-[#b2ceb4]" : "text-[#b2ceb4]"}`}>
-                      {d.name}
-                    </span>
+                  );
+                })}
+              </div>
+
+              {/* Detail Footer */}
+              <div className="bg-[#121412]/80 border border-neutral-900 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                <div className="flex items-center gap-4">
+                  {/* Dot with matching color */}
+                  <span
+                    className="w-3.5 h-3.5 rounded-full shadow-[0_0_12px_currentColor] animate-pulse border-2 border-white/20"
+                    style={{
+                      backgroundColor: monthColors[monthNames[selectedMonthIndex]],
+                      color: monthColors[monthNames[selectedMonthIndex]]
+                    }}
+                  />
+                  <div className="text-left">
+                    <h4 className="text-lg font-headline font-bold text-white leading-tight">
+                      {monthFullNames[selectedMonthIndex]} {selectedYear === "Todos" ? "(Histórico)" : selectedYear}
+                    </h4>
+                    <p className="text-xs text-neutral-400 font-sans mt-1">
+                      Al seleccionar cada barra se detallan sus proporciones sobre el total anual de <span className="font-semibold text-neutral-200">$${formatNumber(totalAnnual)}</span>.
+                    </p>
                   </div>
-                );
-              })}
+                </div>
+
+                <div className="flex flex-col items-end text-right">
+                  <span className="text-[10px] font-sans font-extrabold text-neutral-400 tracking-wider uppercase">
+                    PARTICIPACIÓN: {totalAnnual > 0 ? Math.round(((monthlyValues[selectedMonthIndex] || 0) / totalAnnual) * 100) : 0}%
+                  </span>
+                  <div className="text-2xl font-headline font-black text-white mt-1 tracking-tight">
+                    <span className="text-[#10b981] font-bold mr-1">$</span>
+                    <span className="text-white font-extrabold">{formatNumber(monthlyValues[selectedMonthIndex] || 0)}</span>
+                    <span className="text-[#10b981] text-xs font-bold ml-1.5 uppercase tracking-wider">CLP</span>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
         </div>

@@ -40,6 +40,14 @@ export default function CalendarView({
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
 
+  const isPastDay = (dayNumber: number) => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const checkDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayNumber);
+    checkDate.setHours(0, 0, 0, 0);
+    return checkDate.getTime() < today.getTime();
+  };
+
   const monthNames = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
@@ -391,28 +399,66 @@ export default function CalendarView({
                           const isCheckIn = !!checkInBooking;
                           const isCheckOut = !!checkOutBooking;
                           const isDoubleTransition = isCheckIn && isCheckOut;
-
+                          const isPast = isPastDay(dayNum);
                           let cellColor = "bg-[#1b1e1b]/40 border-neutral-850/20 text-neutral-600";
                           let hoverClass = "cursor-pointer hover:scale-[1.08]";
                           let cellTitle = `${cab.nombre} - Día ${dayNum}`;
 
                           const isGanttCellReserved = state === "reserved" || (isCheckIn && !isDoubleTransition);
 
+                          const assocBooking = checkInBooking || getBookingForDayAndCabin(cab.id, dayNum);
+                          let bookingDetails = "";
+                          if (assocBooking) {
+                            const client = safeClientes.find((c) => c.id === assocBooking.clienteId);
+                            const clientName = client ? `${client.nombre} ${client.apellido}` : "Invitado Anónimo";
+                            bookingDetails = ` | Cliente: ${clientName} (${assocBooking.cantidadPersonas} pas.)`;
+                          }
+
                           if (isDoubleTransition) {
                             cellColor = "occupancy-double-transition text-rose-200";
-                            cellTitle += " | ALERTA: Aseo Express Requerido";
+                            cellTitle += " | ALERTA: Aseo Express Requerido" + bookingDetails;
                           } else if (isGanttCellReserved) {
                             cellColor = "bg-rose-950/50 text-rose-200 border-rose-800/40 hover:bg-rose-900/40";
                             if (isCheckIn) cellTitle += " | Entrada / Check-In";
+                            cellTitle += bookingDetails;
                           } else if (state === "maintenance") {
                             cellColor = "bg-amber-950/55 text-amber-200 border-amber-800/40 hover:bg-amber-900/40";
                             hoverClass = "";
                           } else {
                             cellColor = "bg-emerald-950/50 text-emerald-200 border-emerald-800/40 hover:bg-emerald-900/40";
-                            if (isCheckOut) cellTitle += " | Salida / Check-Out";
+                            if (isCheckOut) cellTitle += " | Salida / Check-Out" + bookingDetails;
                           }
 
+                           if (isPast) {
+                             if (isDoubleTransition) {
+                               const checkOut = checkOutBooking;
+                               const checkIn = checkInBooking;
+                               let checkoutDetails = "";
+                               if (checkOut) {
+                                 const client = safeClientes.find((c) => c.id === checkOut.clienteId);
+                                 const name = client ? `${client.nombre} ${client.apellido}` : "Invitado Anónimo";
+                                 checkoutDetails = `Salida: ${name} (${checkOut.cantidadPersonas} pasajeros)`;
+                               }
+                               let checkinDetails = "";
+                               if (checkIn) {
+                                 const client = safeClientes.find((c) => c.id === checkIn.clienteId);
+                                 const name = client ? `${client.nombre} ${client.apellido}` : "Invitado Anónimo";
+                                 checkinDetails = `Entrada: ${name} (${checkIn.cantidadPersonas} pasajeros)`;
+                               }
+                               cellTitle = `${checkoutDetails} • ${checkinDetails}`;
+                             } else if (assocBooking) {
+                               const client = safeClientes.find((c) => c.id === assocBooking.clienteId);
+                               const clientName = client ? `${client.nombre} ${client.apellido}` : "Invitado Anónimo";
+                               cellTitle = `${clientName} • ${assocBooking.cantidadPersonas} pasajeros`;
+                             } else {
+                               cellTitle = "Disponible";
+                             }
+                             cellColor += " opacity-50 border-white/10";
+                             hoverClass = "cursor-not-allowed hover:opacity-100 hover:scale-[1.08] transition-all duration-200";
+                           }
+
                           const handleCellClick = () => {
+                            if (isPast) return; // Block clicks on past days
                             const yearMonth = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, "0")}`;
                             const checkInDate = `${yearMonth}-${dayNum.toString().padStart(2, "0")}`;
                             
@@ -459,6 +505,7 @@ export default function CalendarView({
                 let isClickable = false;
 
                 if (item.currentMonth) {
+                  const isPast = isPastDay(item.day);
                   if (item.state === "available") {
                     cellBg = "bg-emerald-950/50 border-emerald-800/40 hover:bg-emerald-900/40 text-emerald-200 cursor-pointer";
                     statusDot = <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-emerald-400 rounded-full"></div>;
@@ -467,20 +514,80 @@ export default function CalendarView({
                   } else if (item.state === "reserved") {
                     cellBg = "bg-rose-950/50 border-rose-800/40 hover:bg-rose-900/40 text-rose-200 cursor-pointer";
                     statusDot = <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-rose-500 rounded-full"></div>;
-                    titleText = "Reservado / Ocupado";
+                    
+                    const booking = item.checkInBooking || getBookingForDayAndCabin(selectedCabanaId, item.day);
+                    let bookingDetails = "";
+                    if (booking) {
+                      const client = safeClientes.find((c) => c.id === booking.clienteId);
+                      const name = client ? `${client.nombre} ${client.apellido}` : "Invitado Anónimo";
+                      bookingDetails = ` | Cliente: ${name} (${booking.cantidadPersonas} pas.)`;
+                    }
+                    titleText = "Reservado / Ocupado" + bookingDetails;
                     isClickable = true;
                   } else if (item.state === "transition") {
                     isClickable = true;
                     cellBg = "occupancy-double-transition text-rose-200";
-                    titleText = `Mañana: Checkout (${(item as any).checkOutBooking?.id}) | Tarde: Checkin (${(item as any).checkInBooking?.id}) | ALERTA: Aseo Express Requerido`;
+                    
+                    const checkOut = (item as any).checkOutBooking;
+                    const checkIn = (item as any).checkInBooking;
+                    
+                    let checkoutDetails = "";
+                    if (checkOut) {
+                      const client = safeClientes.find((c) => c.id === checkOut.clienteId);
+                      const name = client ? `${client.nombre} ${client.apellido}` : "Invitado Anónimo";
+                      checkoutDetails = `Salida: ${name} (${checkOut.cantidadPersonas} pas.)`;
+                    }
+                    
+                    let checkinDetails = "";
+                    if (checkIn) {
+                      const client = safeClientes.find((c) => c.id === checkIn.clienteId);
+                      const name = client ? `${client.nombre} ${client.apellido}` : "Invitado Anónimo";
+                      checkinDetails = `Entrada: ${name} (${checkIn.cantidadPersonas} pas.)`;
+                    }
+                    
+                    titleText = `Cambio | ${checkoutDetails ? checkoutDetails + " • " : ""}${checkinDetails || ""}`;
+                    if (item.isDoubleTransition) titleText += " | ALERTA: Aseo Express Requerido";
                   } else if (item.state === "maintenance") {
                     cellBg = "bg-amber-950/55 border-amber-800/40 hover:bg-amber-900/40 text-amber-200";
                     statusDot = <div className="absolute bottom-2 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-amber-400 rounded-full"></div>;
                     titleText = "Mantenimiento";
                   }
+
+                  if (isPast) {
+                    cellBg += " opacity-55 border-white/10 cursor-not-allowed hover:opacity-100 transition-opacity duration-200";
+                    isClickable = false;
+                    
+                    if (item.state === "transition") {
+                      const checkOut = (item as any).checkOutBooking;
+                      const checkIn = (item as any).checkInBooking;
+                      let checkoutDetails = "";
+                      if (checkOut) {
+                        const client = safeClientes.find((c) => c.id === checkOut.clienteId);
+                        const name = client ? `${client.nombre} ${client.apellido}` : "Invitado Anónimo";
+                        checkoutDetails = `Salida: ${name} (${checkOut.cantidadPersonas} pasajeros)`;
+                      }
+                      let checkinDetails = "";
+                      if (checkIn) {
+                        const client = safeClientes.find((c) => c.id === checkIn.clienteId);
+                        const name = client ? `${client.nombre} ${client.apellido}` : "Invitado Anónimo";
+                        checkinDetails = `Entrada: ${name} (${checkIn.cantidadPersonas} pasajeros)`;
+                      }
+                      titleText = `${checkoutDetails} • ${checkinDetails}`;
+                    } else {
+                      const booking = item.checkInBooking || getBookingForDayAndCabin(selectedCabanaId, item.day);
+                      if (booking) {
+                        const client = safeClientes.find((c) => c.id === booking.clienteId);
+                        const name = client ? `${client.nombre} ${client.apellido}` : "Invitado Anónimo";
+                        titleText = `${name} • ${booking.cantidadPersonas} pasajeros`;
+                      } else {
+                        titleText = "Disponible";
+                      }
+                    }
+                  }
                 }
 
                 const handleDayClick = () => {
+                  if (item.currentMonth && isPastDay(item.day)) return; // Block clicks on past days
                   if (item.currentMonth && selectedCabanaId !== "all" && onNavigate) {
                     const yearMonth = `${currentDate.getFullYear()}-${(currentDate.getMonth() + 1).toString().padStart(2, "0")}`;
                     const checkInDate = `${yearMonth}-${item.day.toString().padStart(2, "0")}`;

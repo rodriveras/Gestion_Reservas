@@ -134,15 +134,28 @@ export default function BookingForm({
   }, [entrada]);
 
   const toggleBookingDateCalendar = () => {
-    if (!isEditMode) return;
+    if (!isEditMode || !!viewBookingId) return;
     setIsBookingDateCalendarExpanded(!isBookingDateCalendarExpanded);
     setIsCalendarExpanded(false);
   };
 
   const toggleStayCalendar = () => {
-    if (!isEditMode) return;
+    if (!isEditMode || !!viewBookingId) return;
     setIsCalendarExpanded(!isCalendarExpanded);
     setIsBookingDateCalendarExpanded(false);
+  };
+
+  const formatToYYMMDD = (dateStr: string) => {
+    if (!dateStr) return "Seleccionar...";
+    const dateOnly = dateStr.split("T")[0];
+    const parts = dateOnly.split("-");
+    if (parts.length === 3) {
+      const year2 = parts[0].slice(-2); // Last 2 digits of the year (e.g., "2026" -> "26")
+      const month = parts[1];
+      const day = parts[2];
+      return `${year2}/${month}/${day}`;
+    }
+    return dateStr;
   };
 
   // Quantity of days (stay duration) state
@@ -590,7 +603,7 @@ export default function BookingForm({
                       required
                       value={clienteId}
                       onChange={(e) => setClienteId(e.target.value)}
-                      disabled={!isEditMode}
+                      disabled={!isEditMode || !!viewBookingId}
                       className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
                     >
                       <option value="">Buscar un cliente existente...</option>
@@ -610,12 +623,14 @@ export default function BookingForm({
                   {isEditMode && onCreateClient && (
                     <button
                       type="button"
-                      onClick={() => onCreateClient(cabanaId, entrada)}
-                      className="bg-[#4a634e] text-white px-4 rounded-lg font-sans font-bold text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center gap-1.5 shrink-0 shadow-md cursor-pointer border border-[#b2ceb4]/20"
-                      title="Registrar nuevo cliente"
+                      disabled={!!viewBookingId}
+                      onClick={!viewBookingId ? () => onCreateClient(cabanaId, entrada) : undefined}
+                      className="bg-[#4a634e] text-white px-2.5 md:px-4 rounded-lg font-sans font-bold text-[10px] md:text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1 md:gap-1.5 shrink-0 shadow-md border border-[#b2ceb4]/20 h-10 md:h-11 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100 disabled:active:scale-100 cursor-pointer"
+                      title={viewBookingId ? "No se puede registrar un nuevo cliente desde la consulta de reserva" : "Registrar nuevo cliente"}
                     >
-                      <span className="material-symbols-outlined text-sm">person_add</span>
-                      <span>Nuevo Cliente</span>
+                      <span className="material-symbols-outlined text-sm md:text-base">person_add</span>
+                      <span className="hidden sm:inline">Nuevo Cliente</span>
+                      <span className="inline sm:hidden">Nuevo</span>
                     </button>
                   )}
                 </div>
@@ -632,7 +647,7 @@ export default function BookingForm({
                       required
                       value={cabanaId}
                       onChange={(e) => setCabanaId(e.target.value)}
-                      disabled={!isEditMode}
+                      disabled={!isEditMode || !!viewBookingId}
                       className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed h-11"
                     >
                       <option value="">Elegir una propiedad...</option>
@@ -658,7 +673,7 @@ export default function BookingForm({
                   <div className="flex items-center bg-[#121412] border border-neutral-700 rounded-lg overflow-hidden h-11">
                     <button
                       type="button"
-                      disabled={!isEditMode}
+                      disabled={!isEditMode || !!viewBookingId}
                       onClick={() => setNoches((n) => Math.max(1, n - 1))}
                       className="px-4 text-[#b2ceb4] hover:bg-neutral-850 text-2xl font-bold h-full border-r border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -669,7 +684,7 @@ export default function BookingForm({
                     </span>
                     <button
                       type="button"
-                      disabled={!isEditMode}
+                      disabled={!isEditMode || !!viewBookingId}
                       onClick={() => setNoches((n) => Math.min(30, n + 1))}
                       className="px-4 text-[#b2ceb4] hover:bg-neutral-850 text-2xl font-bold h-full border-l border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
                     >
@@ -686,9 +701,11 @@ export default function BookingForm({
                     Fecha de Reserva
                   </label>
                   <div
-                    onClick={toggleBookingDateCalendar}
-                    className="p-3 bg-[#121412] border-l-4 border-[#b2ceb4] rounded-r-lg relative cursor-pointer select-none hover:border-neutral-600 transition-all h-11 flex items-center justify-between"
-                    title="Haga clic para seleccionar la fecha de reserva"
+                    onClick={!viewBookingId ? toggleBookingDateCalendar : undefined}
+                    className={`p-3 bg-[#121412] border-l-4 border-[#b2ceb4] rounded-r-lg relative select-none hover:border-neutral-600 transition-all h-11 flex items-center justify-between ${
+                      viewBookingId ? "cursor-not-allowed opacity-75" : "cursor-pointer"
+                    }`}
+                    title={viewBookingId ? "No se puede modificar la fecha de reserva" : "Haga clic para seleccionar la fecha de reserva"}
                   >
                     <span className="text-xs font-bold text-neutral-200">
                       {fechaReserva || "Seleccionar..."}
@@ -746,30 +763,34 @@ export default function BookingForm({
                 <div className="grid grid-cols-2 gap-4">
                   {/* Clickable ENTRADA trigger box */}
                   <div
-                    onClick={toggleStayCalendar}
-                    className="p-3 bg-[#121412] border-l-4 border-[#f6bb89] rounded-r-lg relative cursor-pointer select-none hover:border-neutral-600 transition-all"
-                    title="Haga clic para seleccionar fechas en el calendario"
+                    onClick={!viewBookingId ? toggleStayCalendar : undefined}
+                    className={`p-3 bg-[#121412] border-l-4 border-[#f6bb89] rounded-r-lg relative select-none hover:border-neutral-600 transition-all ${
+                      viewBookingId ? "cursor-not-allowed opacity-75" : "cursor-pointer"
+                    }`}
+                    title={viewBookingId ? "No se puede modificar la fecha de entrada" : "Haga clic para seleccionar fechas en el calendario"}
                   >
                     <span className="block text-[10px] font-sans font-bold text-[#f6bb89] uppercase mb-1">
                       ENTRADA
                     </span>
                     <span className="text-sm font-bold text-neutral-100 block pr-6">
-                      {entrada || "Seleccionar..."}
+                      {formatToYYMMDD(entrada)}
                     </span>
                     <Calendar className="w-3.5 h-3.5 text-white absolute right-3 bottom-3" />
                   </div>
 
                   {/* Clickable SALIDA trigger box */}
                   <div
-                    onClick={toggleStayCalendar}
-                    className="p-3 bg-[#121412] border-l-4 border-[#f6bb89]/40 rounded-r-lg relative cursor-pointer select-none hover:border-neutral-600 transition-all"
-                    title="Haga clic para seleccionar fechas en el calendario"
+                    onClick={!viewBookingId ? toggleStayCalendar : undefined}
+                    className={`p-3 bg-[#121412] border-l-4 border-[#f6bb89]/40 rounded-r-lg relative select-none hover:border-neutral-600 transition-all ${
+                      viewBookingId ? "cursor-not-allowed opacity-75" : "cursor-pointer"
+                    }`}
+                    title={viewBookingId ? "No se puede modificar la fecha de salida" : "Haga clic para seleccionar fechas en el calendario"}
                   >
                     <span className="block text-[10px] font-sans font-bold text-[#f6bb89]/70 uppercase mb-1">
                       SALIDA
                     </span>
                     <span className="text-sm font-bold text-neutral-100 block pr-6">
-                      {salida || "Seleccionar..."}
+                      {formatToYYMMDD(salida)}
                     </span>
                     <Calendar className="w-3.5 h-3.5 text-white absolute right-3 bottom-3" />
                   </div>

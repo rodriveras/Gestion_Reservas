@@ -11,6 +11,7 @@ import logoImg from "./Logo.jpeg";
 interface AdminLauncherProps {
   onNavigate: (screen: string) => void;
   onLogoutToGuest: () => void;
+  onLogoutOnly: () => void;
   stats: {
     reservasCount: number;
     cabanasCount: number;
@@ -20,7 +21,7 @@ interface AdminLauncherProps {
   complexName: string;
 }
 
-export default function AdminLauncher({ onNavigate, onLogoutToGuest, stats, complexName }: AdminLauncherProps) {
+export default function AdminLauncher({ onNavigate, onLogoutToGuest, onLogoutOnly, stats, complexName }: AdminLauncherProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -36,13 +37,13 @@ export default function AdminLauncher({ onNavigate, onLogoutToGuest, stats, comp
           src="https://lh3.googleusercontent.com/aida-public/AB6AXuBtCC2fGwoOHRMl6hhKg5CHc_IkqXBTNk8ZRI6bINLHstd2JKjZQKZkfA16K18cBWcwL6oTO4e02H6BP0vhMiGk6O9qneFFFZ35LKI0DXVpShbE67YJNnLzOJjF8NI6LUHE6klxydybaGcfGqN6vpbiBDQyWClJ_kzlnl2s1rxmp5Z4GKW6IpBhDLfCt_0x5x-w2wWcdeIeNrOKkiAylYs_j785rBc_osR6-08kvtkBa61XoEcmLWQXDvczYwd0KpwzqXUs14YZcqvK"
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
-        <div className="absolute inset-0 flex items-center justify-center gap-3 md:gap-5 px-4">
+        <div className="absolute inset-0 flex items-center justify-center gap-3.5 md:gap-6 px-4">
           <img
             src={logoImg}
             alt="Complex Logo"
-            className="w-10 h-10 xs:w-12 xs:h-12 md:w-20 md:h-20 object-contain rounded-xl shadow-md border border-white/10 bg-neutral-900/60 p-1 backdrop-blur-sm"
+            className="w-12 h-12 xs:w-14 xs:h-14 md:w-24 md:h-24 object-contain rounded-2xl shadow-md border border-white/10 bg-neutral-900/60 p-1.5 md:p-2.5 backdrop-blur-sm"
           />
-          <h1 className="text-white font-headline text-xl xs:text-2xl md:text-4xl leading-tight font-semibold tracking-tight text-center">
+          <h1 className="text-white font-headline text-lg xs:text-xl md:text-2xl lg:text-3xl leading-tight font-bold tracking-tight text-center">
             {complexName}
           </h1>
         </div>
@@ -175,15 +176,28 @@ export default function AdminLauncher({ onNavigate, onLogoutToGuest, stats, comp
         </div>
       </div>
 
-      {/* View Toggle */}
-      <div className="flex justify-center pt-3 pb-6 md:pt-6 md:pb-12 border-t border-neutral-900">
+      {/* View Toggle & Logout Actions */}
+      <div className="flex flex-col sm:flex-row justify-center items-center gap-3 pt-4 pb-6 md:pt-8 md:pb-12 border-t border-neutral-900">
+        {/* View Guest Catalog button */}
         <button
           id="btn-logout-client"
+          type="button"
           onClick={onLogoutToGuest}
-          className="flex items-center gap-3 px-6 py-2.5 md:px-8 md:py-3.5 bg-red-950/40 text-red-400 hover:bg-neutral-900 border border-red-950 rounded-full transition-all active:scale-95 shadow-md font-sans text-xs md:text-sm font-bold uppercase tracking-wider"
+          className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-2.5 md:px-8 md:py-3.5 bg-neutral-900 hover:bg-[#252925] border border-neutral-800 text-neutral-300 hover:text-white rounded-full transition-all active:scale-95 shadow-md font-sans text-xs md:text-sm font-bold uppercase tracking-wider cursor-pointer"
+        >
+          <Calendar className="w-3.5 h-3.5 md:w-4 md:h-4 text-[#b2ceb4]" />
+          Ver Catálogo Huésped
+        </button>
+
+        {/* Clear/Logout Admin button */}
+        <button
+          id="btn-logout-admin-only"
+          type="button"
+          onClick={onLogoutOnly}
+          className="w-full sm:w-auto flex items-center justify-center gap-2.5 px-6 py-2.5 md:px-8 md:py-3.5 bg-red-950/40 text-red-400 hover:bg-red-900/30 hover:text-red-200 border border-red-950 rounded-full transition-all active:scale-95 shadow-md font-sans text-xs md:text-sm font-bold uppercase tracking-wider cursor-pointer"
         >
           <LogOut className="w-3.5 h-3.5 md:w-4 md:h-4" />
-          Ver Catálogo Huésped
+          Cerrar Sesión
         </button>
       </div>
     </motion.div>

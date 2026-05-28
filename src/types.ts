@@ -92,5 +92,7 @@ export const INITIAL_CONTRATACIONES: ContratacionServicio[] = [];
 
 export interface Administracion {
   Nombre_complejo: string;
+  Usuario?: string;
+  Contrasena?: string;
 }
 

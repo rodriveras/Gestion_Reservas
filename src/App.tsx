@@ -34,6 +34,7 @@ import ServiceForm from "./components/ServiceForm";
 import BookingForm from "./components/BookingForm";
 import ServiceContractForm from "./components/ServiceContractForm";
 import GuestView from "./components/GuestView";
+import Login from "./components/Login";
 
 export default function App() {
   // --- Persistent Local Database State Engine ---
@@ -103,7 +104,7 @@ export default function App() {
 
   const [administracion, setAdministracion] = useState<Administracion[]>(() => {
     const saved = localStorage.getItem("entre_nieves_administracion");
-    return saved ? JSON.parse(saved) : [{ Nombre_complejo: "ENTRE NIEVES" }];
+    return saved ? JSON.parse(saved) : [{ Nombre_complejo: "Gestion Cabañas" }];
   });
 
   // --- Google Sheets Integration State Engine ---
@@ -118,6 +119,23 @@ export default function App() {
   const [preselectedCheckIn, setPreselectedCheckIn] = useState<string>("");
   const [viewBookingId, setViewBookingId] = useState<string>("");
   const [clientFormReturnTo, setClientFormReturnTo] = useState<string>("");
+
+  // --- Authentication State Engine & URL Guest Bypass ---
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("view") === "guest") {
+      return false; // No authentication required for Guest Catalog
+    }
+    return localStorage.getItem("pms_logged_in") === "true";
+  });
+
+  // Force guest catalog screen if ?view=guest query parameter is loaded
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("view") === "guest") {
+      setCurrentScreen("guest");
+    }
+  }, []);
 
   // Navigation transition helper
   const navigateTo = (screen: string) => {
@@ -166,7 +184,7 @@ export default function App() {
         servicios: INITIAL_SERVICIOS,
         reservas: INITIAL_RESERVAS,
         contrataciones: INITIAL_CONTRATACIONES,
-        administracion: [{ Nombre_complejo: "ENTRE NIEVES" }]
+        administracion: [{ Nombre_complejo: "Gestion Cabañas" }]
       };
 
       try {
@@ -363,6 +381,24 @@ export default function App() {
     serviciosCount: servicios.length,
   };
 
+  if (!isAuthenticated && currentScreen !== "guest") {
+    const sheetsAdminUser = administracion[0]?.Usuario || "admin@entrenieves.com";
+    const sheetsAdminPass = administracion[0]?.Contrasena || "nieves2026";
+    const sheetsComplexName = administracion[0]?.Nombre_complejo || "Entre Nieves";
+
+    return (
+      <Login
+        expectedUser={sheetsAdminUser}
+        expectedPassword={sheetsAdminPass}
+        complexName={sheetsComplexName}
+        onLoginSuccess={() => {
+          setIsAuthenticated(true);
+          navigateTo("admin");
+        }}
+      />
+    );
+  }
+
   return (
     <div className="bg-[#121412] text-on-surface min-h-screen flex flex-col relative overflow-x-hidden selection:bg-[#4a634e]/40 font-body">
       {/* Background grain texture effect */}
@@ -374,8 +410,8 @@ export default function App() {
           <div className="w-8 h-8 rounded-full bg-[#4a634e]/20 border border-[#b2ceb4]/40 flex items-center justify-center animate-pulse">
             <Trees className="w-4 h-4 text-[#b2ceb4]" />
           </div>
-          <h1 className="font-sans text-xl font-bold tracking-tighter text-white italic uppercase flex items-center gap-1.5 selection:bg-transparent">
-            <span>{administracion[0]?.Nombre_complejo || "ENTRE NIEVES"}</span>
+          <h1 className="font-sans text-base sm:text-lg font-bold tracking-tighter text-white italic uppercase flex items-center gap-1.5 selection:bg-transparent">
+            <span>Gestion Cabañas</span>
             {currentScreen !== "admin" && (
               <span className="hidden sm:flex items-center text-xs font-sans text-[#f6bb89]/80 uppercase not-italic tracking-widest pl-1 font-bold">
                 <ChevronRight className="w-3.5 h-3.5 text-neutral-600 inline mr-1" />
@@ -445,9 +481,16 @@ export default function App() {
         {currentScreen === "admin" && (
           <AdminLauncher
             onNavigate={(screen) => navigateTo(screen)}
-            onLogoutToGuest={() => navigateTo("guest")}
+            onLogoutToGuest={() => {
+              navigateTo("guest");
+            }}
+            onLogoutOnly={() => {
+              localStorage.removeItem("pms_logged_in");
+              setIsAuthenticated(false);
+              navigateTo("admin");
+            }}
             stats={statsSummary}
-            complexName={administracion[0]?.Nombre_complejo || "ENTRE NIEVES"}
+            complexName={administracion[0]?.Nombre_complejo || "Gestion Cabañas"}
           />
         )}
 
@@ -562,7 +605,11 @@ export default function App() {
           <GuestView
             cabanas={cabanas}
             reservas={reservas}
-            onBackToAdmin={() => navigateTo(lastScreen)}
+            isAdminLoggedIn={isAuthenticated}
+            onBackToAdmin={() => {
+              window.history.replaceState({}, document.title, window.location.pathname);
+              navigateTo("admin");
+            }}
           />
         )}
       </main>

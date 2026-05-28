@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { Calendar, ChevronLeft, ChevronRight, MessageSquare, Phone, LogOut, Check, X, ShieldAlert } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, MessageSquare, Phone, LogOut, Check, X, ShieldAlert, Home, Share2 } from "lucide-react";
 import { Cabana, Reserva } from "../types";
 
 interface GuestViewProps {
@@ -15,6 +15,19 @@ interface GuestViewProps {
 }
 
 export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestViewProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleShareLink = () => {
+    const shareUrl = `${window.location.origin}${window.location.pathname}?view=guest`;
+    navigator.clipboard.writeText(shareUrl).then(() => {
+      setCopied(true);
+      alert("¡Enlace de catálogo copiado al portapapeles! Listo para enviar a tus clientes.");
+      setTimeout(() => setCopied(false), 2000);
+    }).catch((err) => {
+      console.error("Error al copiar enlace:", err);
+    });
+  };
+
   // Synchronized global date for all guest calendars
   const [currentDate, setCurrentDate] = useState<Date>(() => {
     const today = new Date();
@@ -87,14 +100,39 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
       animate={{ opacity: 1 }}
       className="space-y-8"
     >
-      {/* Branding Headline */}
-      <section className="text-center md:text-left">
-        <span className="text-xs font-sans font-bold text-[#f6bb89] uppercase tracking-widest block mb-1">
-          Experiencia de Lujo
-        </span>
-        <h2 className="text-3xl md:text-4xl font-headline font-bold text-[#b2ceb4]">
-          Nuestras Cabañas
-        </h2>
+      {/* Branding Headline & Controls */}
+      <section className="flex flex-row justify-between items-start w-full gap-4 pb-2 border-b border-neutral-900/40">
+        <div className="text-left">
+          <span className="text-xs font-sans font-bold text-[#f6bb89] uppercase tracking-widest block mb-1">
+            Experiencia de Lujo
+          </span>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-headline font-bold text-[#b2ceb4]">
+            Nuestras Cabañas
+          </h2>
+        </div>
+
+        {/* Top-Right Icon-Only Actions */}
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Share Button (Icon-Only) */}
+          <button
+            onClick={handleShareLink}
+            type="button"
+            className="p-2.5 bg-[#4a634e]/20 text-[#b2ceb4] border border-[#b2ceb4]/30 hover:bg-[#4a634e]/40 hover:text-white rounded-xl transition-all active:scale-95 shadow-md cursor-pointer flex items-center justify-center"
+            title={copied ? "¡Enlace Copiado!" : "Copiar enlace del catálogo para clientes"}
+          >
+            {copied ? <Check className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
+          </button>
+
+          {/* Go Back / Home Button (Icon-Only) */}
+          <button
+            onClick={onBackToAdmin}
+            type="button"
+            className="p-2.5 bg-neutral-900 text-neutral-400 border border-neutral-800 hover:bg-neutral-850 hover:text-white rounded-xl transition-all active:scale-95 shadow-md cursor-pointer flex items-center justify-center"
+            title="Volver al Menú Principal"
+          >
+            <Home className="w-5 h-5" />
+          </button>
+        </div>
       </section>
 
       {/* Grid of Cabin slider-containers (Sideways scroll on mobile, vertical list on desktop) */}
@@ -301,19 +339,7 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
         </div>
       </section>
 
-      {/* Close button returning to Admin panel */}
-      <div className="fixed bottom-0 left-0 w-full p-4 bg-[#121412]/80 backdrop-blur-md z-40 border-t border-neutral-900">
-        <div className="max-w-container-max mx-auto">
-          <button
-            onClick={onBackToAdmin}
-            className="w-full flex items-center justify-center gap-2 bg-red-950/40 text-red-400 hover:bg-neutral-900 border border-red-950/60 py-3.5 rounded-xl font-sans text-xs font-bold uppercase tracking-wider transition-all active:scale-[0.98] shadow-lg cursor-pointer"
-          >
-            <LogOut className="w-4 h-4" />
-            Cerrar Sesión &amp; Volver a Administración
-          </button>
-        </div>
-      </div>
-      <div className="h-16"></div>
+      <div className="h-6"></div>
     </motion.div>
   );
 }
