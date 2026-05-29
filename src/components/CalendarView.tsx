@@ -341,17 +341,17 @@ export default function CalendarView({
             <ArrowLeft className="w-4 h-4" />
             Volver
           </button>
-          <h2 className="text-2xl md:text-3xl font-headline font-bold text-[#b2ceb4]">
+          <h2 className="text-xl md:text-2xl font-headline font-bold text-white">
             Disponibilidad y reservas
           </h2>
         </div>
 
         {/* Toggle & Filter Container */}
         <div className="flex flex-row items-center gap-3 pb-1 shrink-0">
-          {/* Planificador General Button */}
+          {/* Planificador Button */}
           <button
             onClick={() => setSelectedCabanaId("all")}
-            title="Planificador general"
+            title="Planificador"
             className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all border cursor-pointer shrink-0 ${
               selectedCabanaId === "all"
                 ? "bg-[#4a634e] text-white border-[#4a634e] shadow-lg shadow-emerald-950/20"
@@ -393,9 +393,9 @@ export default function CalendarView({
         {/* Left: 8 cols - Calendar Grid Card */}
         <div className="lg:col-span-8 bg-[#1b1e1b] rounded-xl p-6 border-t-2 border-[#f6bb89]/70 shadow-xl border-x border-b border-neutral-900/30">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-xl font-headline font-semibold text-neutral-100">
+            <h3 className="text-lg font-headline font-semibold text-neutral-100">
               {selectedCabanaId === "all" 
-                ? "Planificador general" 
+                ? "Planificador" 
                 : (safeCabanas.find((c) => c.id === selectedCabanaId)?.nombre || "Detalle de Unidad")}
             </h3>
             <div className="relative">
@@ -727,18 +727,18 @@ export default function CalendarView({
           )}
 
           {/* Indicators Legend */}
-          <div className="flex flex-wrap gap-6 mt-6 pt-6 border-t border-neutral-900">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#b2ceb4]"></div>
-              <span className="text-xs text-neutral-400 font-sans font-medium">Disponible</span>
+          <div className="flex flex-row flex-wrap items-center gap-x-4 gap-y-2 mt-6 pt-6 border-t border-neutral-900">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-[#b2ceb4]"></div>
+              <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-neutral-400">Disponible</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-rose-500"></div>
-              <span className="text-xs text-neutral-400 font-sans font-medium">Reservado / Ocupado</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-rose-500"></div>
+              <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-neutral-400">Ocupado</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-[#f9ba82]"></div>
-              <span className="text-xs text-neutral-400 font-sans font-medium">Mantenimiento</span>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-[#f9ba82]"></div>
+              <span className="text-[10px] font-sans font-bold uppercase tracking-wider text-neutral-400">Mantenimiento</span>
             </div>
           </div>
         </div>
@@ -748,7 +748,7 @@ export default function CalendarView({
           <div className="flex items-center gap-2 mb-6 pb-2 border-b border-neutral-900">
             <ArrowLeftRight className="w-4 h-4 text-[#f6bb89]" />
             <h3 className="text-lg font-headline font-semibold text-neutral-100">
-              {selectedCabanaId === "all" ? "Todas las Reservas" : "Próximas Llegadas"}
+              {selectedCabanaId === "all" ? "Reservas Activas" : "Próximas Llegadas"}
             </h3>
           </div>
 

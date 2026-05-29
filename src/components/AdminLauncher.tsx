@@ -4,7 +4,7 @@
  */
 
 import { motion } from "motion/react";
-import { Grid, Calendar, UserPlus, FilePlus, Sparkles } from "lucide-react";
+import { Grid, Calendar, UserPlus, FilePlus, Sparkles, TrendingUp } from "lucide-react";
 
 import logoImg from "./Logo.jpeg";
 
@@ -56,16 +56,18 @@ export default function AdminLauncher({
           <button
             id="btn-shortcut-calendar"
             onClick={() => onNavigate("calendar")}
-            className="w-full py-3.5 md:py-4 px-6 bg-[#f3f4f6] hover:bg-white text-neutral-900 font-sans font-medium rounded-full text-xs md:text-sm transition-all cursor-pointer text-center active:scale-[0.98] shadow-md"
+            className="w-full py-3.5 md:py-4 px-6 bg-[#f3f4f6] hover:bg-white text-neutral-900 font-sans font-medium rounded-full text-xs md:text-sm transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98] shadow-md"
           >
+            <Calendar className="w-4 h-4 md:w-4.5 h-4.5 shrink-0" />
             Gestor de Reservas
           </button>
 
           <button
             id="btn-shortcut-dashboard"
             onClick={() => onNavigate("dashboard")}
-            className="w-full py-3.5 md:py-4 px-6 bg-transparent border border-white/20 hover:bg-white/5 hover:border-white/30 text-white font-sans font-medium rounded-full text-xs md:text-sm transition-all cursor-pointer text-center active:scale-[0.98]"
+            className="w-full py-3.5 md:py-4 px-6 bg-transparent border-2 border-white/20 hover:bg-white/5 hover:border-white/30 text-white font-sans font-medium rounded-full text-xs md:text-sm transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-[0.98]"
           >
+            <TrendingUp className="w-4 h-4 md:w-4.5 h-4.5 shrink-0" />
             Análisis Estratégico
           </button>
         </div>
@@ -76,25 +78,28 @@ export default function AdminLauncher({
             <button
               id="btn-shortcut-client"
               onClick={() => onNavigate("new-client")}
-              className="w-full py-2.5 px-1 bg-[#4a634e]/15 border border-[#b2ceb4]/30 hover:bg-[#4a634e]/25 text-[#b2ceb4] font-sans font-semibold rounded-full text-[8px] xs:text-[9px] sm:text-[10px] md:text-[11px] transition-all cursor-pointer text-center active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
+              className="w-full py-3 bg-transparent border border-white/20 hover:bg-white/5 hover:border-white/30 text-white rounded-full transition-all cursor-pointer flex items-center justify-center active:scale-95"
+              title="Nuevo Cliente"
             >
-              Nuevo Cliente
+              <UserPlus className="w-5 h-5" />
             </button>
 
             <button
               id="btn-shortcut-booking"
               onClick={() => onNavigate("new-booking")}
-              className="w-full py-2.5 px-1 bg-[#f6bb89]/10 border border-[#f6bb89]/30 hover:bg-[#f6bb89]/20 text-[#f6bb89] font-sans font-semibold rounded-full text-[8px] xs:text-[9px] sm:text-[10px] md:text-[11px] transition-all cursor-pointer text-center active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
+              className="w-full py-3 bg-transparent border border-white/20 hover:bg-white/5 hover:border-white/30 text-white rounded-full transition-all cursor-pointer flex items-center justify-center active:scale-95"
+              title="Nueva Reserva"
             >
-              Nueva Reserva
+              <Calendar className="w-5 h-5" />
             </button>
 
             <button
               id="btn-shortcut-contract"
               onClick={() => onNavigate("contract-service")}
-              className="w-full py-2.5 px-1 bg-neutral-800/40 border border-neutral-700/60 hover:bg-neutral-800/70 text-neutral-300 font-sans font-semibold rounded-full text-[8px] xs:text-[9px] sm:text-[10px] md:text-[11px] transition-all cursor-pointer text-center active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
+              className="w-full py-3 bg-transparent border border-white/20 hover:bg-white/5 hover:border-white/30 text-white rounded-full transition-all cursor-pointer flex items-center justify-center active:scale-95"
+              title="Contratar Servicio"
             >
-              Contratar Serv.
+              <span className="material-symbols-outlined text-xl leading-none">hot_tub</span>
             </button>
           </div>
         </div>

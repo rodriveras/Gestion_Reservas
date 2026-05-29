@@ -37,6 +37,17 @@ import GuestView from "./components/GuestView";
 import Login from "./components/Login";
 import ConfigModal from "./components/ConfigModal";
 
+const getInitials = (userStr: string) => {
+  if (!userStr) return "A";
+  const namePart = userStr.split("@")[0];
+  const parts = namePart.split(/[\s._-]+/).filter(Boolean);
+  if (parts.length === 0) return "A";
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2).toUpperCase();
+  }
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+};
+
 export default function App() {
   // --- Persistent Local Database State Engine ---
   const [cabanas, setCabanas] = useState<Cabana[]>(() => {
@@ -519,14 +530,15 @@ export default function App() {
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f6bb89] rounded-full"></span>
             </button>
 
-            {/* User profile picture */}
+            {/* User profile initials avatar */}
             <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#4a634e]/50 flex items-center justify-center bg-neutral-900 shadow-inner">
-                <img
-                  alt="Representative Profile Avatar"
-                  className="w-full h-full object-cover"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDW65zXPLOw1us9DzxBw-YDhmH15Mg8dhFrxPDERUKIVl2LyHVY8o55u6DkinnfqDQct44ttHkytebFQCMTfaFj1zTuQVOT1JKTdwd18Qd-l8Vz894VUmYBapF_Mr_L90WVywWl7BRN9WqZkc-p_NPCEwga4_4cbC5WvyscFDXKoCvf_9DXKRIGHvKn8PlhpKY0bb0RWe6qrvWVmyjr3ctVEg7vy21Tfen-hTtet-DzpWJBUDJaJsymO_mPFcMpjSLlUGWnYwgJivvF"
-                />
+              <div 
+                className="w-10 h-10 rounded-full border-2 border-[#b2ceb4]/40 flex items-center justify-center bg-[#4a634e] shadow-md cursor-pointer select-none"
+                title={`Usuario activo: ${administracion[0]?.Usuario || "admin@entrenieves.com"}`}
+              >
+                <span className="text-sm font-sans font-bold text-white tracking-wider">
+                  {getInitials(administracion[0]?.Usuario || "admin@entrenieves.com")}
+                </span>
               </div>
             </div>
           </div>
