@@ -23,6 +23,8 @@ interface CalendarViewProps {
   contrataciones?: ContratacionServicio[];
   onBack: () => void;
   onNavigate?: (screen: string, cabinId?: string, checkIn?: string, viewBookingId?: string) => void;
+  onSaveBooking?: (booking: Reserva) => void;
+  onSaveContratacion?: (contract: ContratacionServicio) => void;
 }
 
 export default function CalendarView({
@@ -33,12 +35,18 @@ export default function CalendarView({
   contrataciones = [],
   onBack,
   onNavigate,
+  onSaveBooking,
+  onSaveContratacion,
 }: CalendarViewProps) {
   const [selectedCabanaId, setSelectedCabanaId] = useState<string>("all");
   const [currentDate, setCurrentDate] = useState<Date>(() => {
     const today = new Date();
     return new Date(today.getFullYear(), today.getMonth(), 1);
   });
+  
+  const [selectedReservaId, setSelectedReservaId] = useState<string | null>(null);
+  const [amountToPay, setAmountToPay] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<"Efectivo" | "Tarjeta" | "Transferencia">("Transferencia");
 
   const isPastDay = (dayNumber: number) => {
     const today = new Date();
@@ -128,7 +136,7 @@ export default function CalendarView({
   };
 
   // Helper to determine occupancy dynamically, checking database reservations + visual seeding baseline
-  const getDayStateForCabin = (cabinId: string, dayNum: number) => {
+  const getDayStateForCabin = (cabinId: string, dayNum: number): "available" | "reserved" | "maintenance" => {
     const checkDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), dayNum);
 
     // 1. Check real bookings in database
@@ -240,6 +248,62 @@ export default function CalendarView({
       state: "inactive" as const,
     });
   }
+
+  const handleConfirmPayment = (bookingId: string, balance: number) => {
+    const paymentVal = Number(amountToPay);
+    if (isNaN(paymentVal) || paymentVal <= 0) {
+      alert("Error: Ingrese un monto de pago válido mayor a 0.");
+      return;
+    }
+
+    if (paymentVal > balance) {
+      alert(`Error: El monto ingresado (${formatCurrency(paymentVal)}) supera el saldo pendiente de la reserva (${formatCurrency(balance)}).`);
+      return;
+    }
+
+    const booking = safeReservas.find((r) => r.id === bookingId);
+    if (!booking) {
+      alert("Error: Reserva no encontrada.");
+      return;
+    }
+
+    // Calculate new advance payment
+    const newAnticipo = (booking.montoAnticipo || 0) + paymentVal;
+    
+    // Check if paid in full (balance becomes 0)
+    const newBalance = balance - paymentVal;
+    const isFullyPaid = newBalance <= 0;
+    const newEstado: Reserva["estadoReserva"] = isFullyPaid ? "Pagada" : booking.estadoReserva;
+
+    const updatedBooking: Reserva = {
+      ...booking,
+      montoAnticipo: newAnticipo,
+      estadoReserva: newEstado,
+      metodoPago: paymentMethod,
+    };
+
+    // Save the updated booking
+    if (onSaveBooking) {
+      onSaveBooking(updatedBooking);
+    }
+
+    // If fully paid, mark contracted services as Pagado as well
+    if (isFullyPaid && onSaveContratacion && contrataciones) {
+      const bookingServices = contrataciones.filter((c) => c.reservaId === bookingId);
+      bookingServices.forEach((contract) => {
+        if (contract.estadoPago !== "Pagado") {
+          onSaveContratacion({
+            ...contract,
+            estadoPago: "Pagado",
+            medioPago: paymentMethod,
+          });
+        }
+      });
+    }
+
+    alert("¡Pago registrado satisfactoriamente!");
+    setSelectedReservaId(null);
+  };
 
   const formatCurrency = (val: number) => {
     return new Intl.NumberFormat("es-CL", { style: "currency", currency: "CLP", maximumFractionDigits: 0 }).format(val);
@@ -668,7 +732,7 @@ export default function CalendarView({
             </h3>
           </div>
 
-          <div className="flex-1 overflow-y-auto max-h-[350px] space-y-3 pr-1">
+          <div className="flex-grow overflow-y-auto max-h-[420px] space-y-3 pr-1">
             {upcomingArrivals.length === 0 ? (
               <div className="text-center py-12 text-neutral-500 text-sm font-sans">
                 Sin registros de reservas para este periodo.
@@ -678,13 +742,21 @@ export default function CalendarView({
                 <div
                   key={arr.id}
                   onClick={() => {
-                    if (onNavigate) {
-                      onNavigate("new-booking", undefined, undefined, arr.id);
+                    if (selectedReservaId === arr.id) {
+                      setSelectedReservaId(null);
+                    } else {
+                      setSelectedReservaId(arr.id);
+                      setAmountToPay(arr.balance.toString());
+                      setPaymentMethod("Transferencia");
                     }
                   }}
-                  className="bg-[#121412] p-4 rounded-xl border border-neutral-800 hover:border-[#b2ceb4]/40 transition-all cursor-pointer group"
+                  className={`bg-[#121412] p-4 rounded-xl border transition-all cursor-pointer group space-y-2.5 ${
+                    selectedReservaId === arr.id
+                      ? "border-[#b2ceb4] ring-2 ring-[#b2ceb4]/10 shadow-lg shadow-[#b2ceb4]/5"
+                      : "border-neutral-800 hover:border-[#b2ceb4]/40"
+                  }`}
                 >
-                  <div className="flex justify-between items-start mb-1">
+                  <div className="flex justify-between items-start">
                     <h4 className="text-xs font-sans font-bold text-neutral-100 group-hover:text-[#b2ceb4] transition-colors truncate max-w-[140px]">
                       {arr.guestName}
                     </h4>
@@ -692,7 +764,7 @@ export default function CalendarView({
                       {formatCurrency(arr.price)}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] text-[#f6bb89] mb-3">
+                  <div className="flex items-center gap-1 text-[11px] text-[#f6bb89]">
                     <span className="font-semibold">{arr.cabinName}</span>
                     <span className="text-neutral-600">•</span>
                     <span className="text-neutral-400">{arr.dateText}</span>
@@ -744,6 +816,88 @@ export default function CalendarView({
                       <span className="text-xs font-headline font-bold text-[#f6bb89]">{formatCurrency(arr.balance)}</span>
                     </div>
                   </div>
+
+                  {/* Interactive Payment Box when selected */}
+                  {selectedReservaId === arr.id && (
+                    <div 
+                      onClick={(e) => e.stopPropagation()} 
+                      className="mt-3 p-3 bg-[#171a17] border border-[#b2ceb4]/20 rounded-xl space-y-2.5 shadow-inner cursor-default"
+                    >
+                      <div className="flex items-center gap-1.5 border-b border-neutral-850 pb-1.5">
+                        <span className="material-symbols-outlined text-[#f6bb89] text-base">payments</span>
+                        <span className="text-[10px] font-sans font-black uppercase tracking-wider text-neutral-200">
+                          Registrar Pago de Saldo
+                        </span>
+                      </div>
+
+                      {arr.balance <= 0 ? (
+                        <div className="text-center py-2 text-emerald-400 font-sans text-[10px] font-bold flex items-center justify-center gap-1.5 bg-emerald-950/20 rounded-lg border border-emerald-900/30">
+                          <span className="material-symbols-outlined text-sm">check_circle</span>
+                          <span>COMPLETAMENTE PAGADA</span>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {/* Payment Amount Input */}
+                          <div className="space-y-1">
+                            <label className="block text-[8px] font-sans font-bold text-neutral-400 uppercase tracking-widest">
+                              Monto a Pagar ($)
+                            </label>
+                            <div className="relative">
+                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-bold text-neutral-500 text-[10px]">$</span>
+                              <input
+                                type="number"
+                                required
+                                value={amountToPay}
+                                onChange={(e) => setAmountToPay(e.target.value)}
+                                placeholder="0.00"
+                                className="w-full pl-6 pr-3 py-1 bg-[#121412] text-neutral-200 border border-neutral-800 focus:border-[#b2ceb4] rounded-lg text-xs font-bold outline-none"
+                              />
+                            </div>
+                          </div>
+
+                          {/* Payment Method Select */}
+                          <div className="space-y-1">
+                            <label className="block text-[8px] font-sans font-bold text-neutral-400 uppercase tracking-widest">
+                              Método de Pago
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={paymentMethod}
+                                onChange={(e) => setPaymentMethod(e.target.value as any)}
+                                className="w-full bg-[#121412] text-neutral-200 border border-neutral-800 focus:border-[#b2ceb4] rounded-lg p-1.5 text-xs font-semibold outline-none appearance-none cursor-pointer"
+                              >
+                                <option value="Transferencia">Transferencia</option>
+                                <option value="Efectivo">Efectivo</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                              </select>
+                              <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none text-sm">
+                                expand_more
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Confirm / Cancel Buttons */}
+                          <div className="flex gap-2 pt-1">
+                            <button
+                              type="button"
+                              onClick={() => handleConfirmPayment(arr.id, arr.balance)}
+                              className="flex-1 py-1.5 bg-[#4a634e] hover:bg-[#455c49] text-white font-bold rounded-lg text-[9px] font-sans uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-md border border-[#b2ceb4]/10"
+                            >
+                              <span className="material-symbols-outlined text-[10px]">done</span>
+                              Confirmar Pago
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setSelectedReservaId(null)}
+                              className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-850 text-neutral-400 font-bold rounded-lg text-[9px] font-sans uppercase tracking-wider transition-all cursor-pointer border border-neutral-800"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))
             )}

@@ -61,7 +61,7 @@ export interface Reserva {
   canalVentas: 'WhatsApp' | 'Facebook' | 'Instagram' | 'Airbnb' | 'Directo' | 'Booking' | 'Otros';
   montoTotal: number;
   montoAnticipo: number;
-  estadoReserva: 'Confirmada' | 'Pendiente de Pago' | 'Cancelada' | 'En Espera';
+  estadoReserva: 'Confirmada' | 'Pendiente de Pago' | 'Cancelada' | 'En Espera' | 'Pagada';
   metodoPago: 'Efectivo' | 'Tarjeta' | 'Transferencia';
 }
 
@@ -91,8 +91,12 @@ export const INITIAL_RESERVAS: Reserva[] = [];
 export const INITIAL_CONTRATACIONES: ContratacionServicio[] = [];
 
 export interface Administracion {
+  id: string;
   Nombre_complejo: string;
   Usuario?: string;
   Contrasena?: string;
+  Telefono?: string;
+  Whatsapp?: string;
 }
+
 

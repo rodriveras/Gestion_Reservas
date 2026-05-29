@@ -61,7 +61,7 @@ export const sheetsService = {
    */
   async saveRecord(
     sheetName: keyof DatabaseState,
-    record: Cabana | Cliente | Servicio | Reserva | ContratacionServicio
+    record: Cabana | Cliente | Servicio | Reserva | ContratacionServicio | Administracion
   ): Promise<boolean> {
     // 1. Guardar localmente primero para asegurar responsividad instantánea en la UI
     this.updateLocalRecord(sheetName, record);

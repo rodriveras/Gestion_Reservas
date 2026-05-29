@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { Trees, User, Bell, HelpCircle, Shield, Briefcase, ChevronRight, Cloud, CloudOff, RefreshCw, Calendar } from "lucide-react";
+import { Trees, User, Bell, HelpCircle, Shield, Briefcase, ChevronRight, Cloud, CloudOff, RefreshCw, Calendar, Settings, Home, LogOut } from "lucide-react";
 
 // Types and Seed lists
 import {
@@ -35,6 +35,7 @@ import BookingForm from "./components/BookingForm";
 import ServiceContractForm from "./components/ServiceContractForm";
 import GuestView from "./components/GuestView";
 import Login from "./components/Login";
+import ConfigModal from "./components/ConfigModal";
 
 export default function App() {
   // --- Persistent Local Database State Engine ---
@@ -104,7 +105,29 @@ export default function App() {
 
   const [administracion, setAdministracion] = useState<Administracion[]>(() => {
     const saved = localStorage.getItem("entre_nieves_administracion");
-    return saved ? JSON.parse(saved) : [{ Nombre_complejo: "Gestion Cabañas" }];
+    const parsed = saved ? JSON.parse(saved) : null;
+    
+    // Ensure all 6 fields are present in the administration state
+    if (parsed && parsed.length > 0) {
+      const config = parsed[0];
+      return [{
+        id: config.id || "admin-config",
+        Nombre_complejo: config.Nombre_complejo || "Gestion Cabañas",
+        Usuario: config.Usuario || "admin@entrenieves.com",
+        Contrasena: config.Contrasena || "nieves2026",
+        Telefono: config.Telefono || "+5491112345678",
+        Whatsapp: config.Whatsapp || "5491112345678"
+      }];
+    }
+    
+    return [{
+      id: "admin-config",
+      Nombre_complejo: "Gestion Cabañas",
+      Usuario: "admin@entrenieves.com",
+      Contrasena: "nieves2026",
+      Telefono: "+5491112345678",
+      Whatsapp: "5491112345678"
+    }];
   });
 
   // --- Google Sheets Integration State Engine ---
@@ -115,6 +138,10 @@ export default function App() {
   // Navigation Screen Name
   const [currentScreen, setCurrentScreen] = useState<string>("admin");
   const [lastScreen, setLastScreen] = useState<string>("admin");
+
+  // Configuration UI States
+  const [isConfigOpen, setIsConfigOpen] = useState<boolean>(false);
+  const [isConfigDropdownOpen, setIsConfigDropdownOpen] = useState<boolean>(false);
   const [preselectedCabinId, setPreselectedCabinId] = useState<string>("");
   const [preselectedCheckIn, setPreselectedCheckIn] = useState<string>("");
   const [viewBookingId, setViewBookingId] = useState<string>("");
@@ -184,7 +211,14 @@ export default function App() {
         servicios: INITIAL_SERVICIOS,
         reservas: INITIAL_RESERVAS,
         contrataciones: INITIAL_CONTRATACIONES,
-        administracion: [{ Nombre_complejo: "Gestion Cabañas" }]
+        administracion: [{
+          id: "admin-config",
+          Nombre_complejo: "Gestion Cabañas",
+          Usuario: "admin@entrenieves.com",
+          Contrasena: "nieves2026",
+          Telefono: "+5491112345678",
+          Whatsapp: "5491112345678"
+        }]
       };
 
       try {
@@ -373,6 +407,19 @@ export default function App() {
     setTimeout(() => setSyncStatus("idle"), 3000);
   };
 
+  const handleSaveConfig = async (newConfig: Administracion) => {
+    // 1. Actualización optimista local
+    setAdministracion([newConfig]);
+    
+    // 2. Intentar guardar en la nube
+    setIsSyncing(true);
+    setSyncStatus("loading");
+    const success = await sheetsService.saveRecord("administracion", newConfig);
+    setSyncStatus(success ? "success" : "error");
+    setIsSyncing(false);
+    setTimeout(() => setSyncStatus("idle"), 3000);
+  };
+
   // Stats summary helper object
   const statsSummary = {
     reservasCount: reservas.filter((r) => r.estadoReserva !== "Cancelada").length,
@@ -405,90 +452,84 @@ export default function App() {
       <div className="absolute inset-0 bg-[radial-gradient(#2c2f2c_1px,transparent_1px)] [background-size:24px_24px] opacity-10 pointer-events-none z-0"></div>
 
       {/* Top Main AppBar Header */}
-      <header className="relative z-40 bg-[#1b1e1b] border-b-2 border-[#f6bb89] dark:border-amber-900/60 w-full flex items-center justify-between px-6 py-3 h-16 sticky top-0 shadow-lg">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-[#4a634e]/20 border border-[#b2ceb4]/40 flex items-center justify-center animate-pulse">
-            <Trees className="w-4 h-4 text-[#b2ceb4]" />
-          </div>
-          <h1 className="font-sans text-base sm:text-lg font-bold tracking-tighter text-white italic uppercase flex items-center gap-1.5 selection:bg-transparent">
-            <span>Gestion Cabañas</span>
-            {currentScreen !== "admin" && (
-              <span className="hidden sm:flex items-center text-xs font-sans text-[#f6bb89]/80 uppercase not-italic tracking-widest pl-1 font-bold">
-                <ChevronRight className="w-3.5 h-3.5 text-neutral-600 inline mr-1" />
-                {currentScreen.replace("-", " ")}
-              </span>
-            )}
-          </h1>
+      {currentScreen !== "guest" && (
+        <header className="relative z-40 bg-[#1b1e1b] border-b-2 border-[#f6bb89] dark:border-amber-900/60 w-full flex items-center justify-between px-6 py-3 h-16 sticky top-0 shadow-lg">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-[#4a634e]/20 border border-[#b2ceb4]/40 flex items-center justify-center animate-pulse">
+              <Trees className="w-4 h-4 text-[#b2ceb4]" />
+            </div>
+            <h1 className="font-sans text-base sm:text-lg font-bold tracking-tighter text-white italic uppercase flex items-center gap-1.5 selection:bg-transparent">
+              <span>Gestion Cabañas</span>
+              {currentScreen !== "admin" && (
+                <span className="hidden sm:flex items-center text-xs font-sans text-[#f6bb89]/80 uppercase not-italic tracking-widest pl-1 font-bold">
+                  <ChevronRight className="w-3.5 h-3.5 text-neutral-600 inline mr-1" />
+                  {currentScreen.replace("-", " ")}
+                </span>
+              )}
+            </h1>
 
-          {/* Cloud Sync Status Badge */}
-          <div className="ml-4 flex items-center gap-2">
-            {!sheetsActive ? (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-neutral-800 border border-neutral-700 text-neutral-400" title="La app funciona localmente usando LocalStorage. Para conectar a Google Sheets, configura .env.local">
-                <CloudOff className="w-3 h-3 text-neutral-500" />
-                <span className="hidden xs:inline">Base Local</span>
-              </div>
-            ) : syncStatus === "loading" ? (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-950/20 border border-amber-500/40 text-amber-300 animate-pulse" title="Sincronizando con Google Sheets...">
-                <RefreshCw className="w-3 h-3 animate-spin text-amber-400" />
-                <span className="hidden xs:inline">Sincronizando...</span>
-              </div>
-            ) : syncStatus === "error" ? (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-red-950/20 border border-red-500/40 text-red-300" title="Error de conexión con Google Sheets. Usando caché offline local.">
-                <CloudOff className="w-3 h-3 text-red-400 animate-bounce" />
-                <span className="hidden xs:inline">Error Nube</span>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-950/25 border border-emerald-500/30 text-emerald-300" title="Conexión en vivo con Google Sheets activa. Todos los datos están seguros en la nube.">
-                <Cloud className="w-3 h-3 text-emerald-400" />
-                <span className="hidden xs:inline">Nube Activa</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Profiles navigation items */}
-        <div className="flex items-center gap-4">
-          {/* Support Indicator */}
-          <button
-            onClick={() => setCurrentScreen("guest")}
-            className="hidden md:flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-all font-sans font-semibold border border-neutral-800 rounded-full px-3 py-1 bg-neutral-900"
-            title="Vista de Huéspedes"
-          >
-            <Shield className="w-3 h-3 text-[#b2ceb4]" />
-            <span>Vista Huésped</span>
-          </button>
-
-          <button className="relative p-2 text-neutral-400 hover:text-white transition-colors duration-200">
-            <Bell className="w-5 h-5 text-[#b2ceb4]" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f6bb89] rounded-full"></span>
-          </button>
-
-          {/* User profile picture */}
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#4a634e]/50 flex items-center justify-center bg-neutral-900 shadow-inner">
-              <img
-                alt="Representative Profile Avatar"
-                className="w-full h-full object-cover"
-                src="https://lh3.googleusercontent.com/aida-public/AB6AXuDW65zXPLOw1us9DzxBw-YDhmH15Mg8dhFrxPDERUKIVl2LyHVY8o55u6DkinnfqDQct44ttHkytebFQCMTfaFj1zTuQVOT1JKTdwd18Qd-l8Vz894VUmYBapF_Mr_L90WVywWl7BRN9WqZkc-p_NPCEwga4_4cbC5WvyscFDXKoCvf_9DXKRIGHvKn8PlhpKY0bb0RWe6qrvWVmyjr3ctVEg7vy21Tfen-hTtet-DzpWJBUDJaJsymO_mPFcMpjSLlUGWnYwgJivvF"
-              />
+            {/* Cloud Sync Status Badge */}
+            <div className="ml-4 flex items-center gap-2">
+              {!sheetsActive ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-neutral-800 border border-neutral-700 text-neutral-400" title="La app funciona localmente usando LocalStorage. Para conectar a Google Sheets, configura .env.local">
+                  <CloudOff className="w-3 h-3 text-neutral-500" />
+                  <span className="hidden xs:inline">Base Local</span>
+                </div>
+              ) : syncStatus === "loading" ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-amber-950/20 border border-amber-500/40 text-amber-300 animate-pulse" title="Sincronizando con Google Sheets...">
+                  <RefreshCw className="w-3 h-3 animate-spin text-amber-400" />
+                  <span className="hidden xs:inline">Sincronizando...</span>
+                </div>
+              ) : syncStatus === "error" ? (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-red-950/20 border border-red-500/40 text-red-300" title="Error de conexión con Google Sheets. Usando caché offline local.">
+                  <CloudOff className="w-3 h-3 text-red-400 animate-bounce" />
+                  <span className="hidden xs:inline">Error Nube</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-950/25 border border-emerald-500/30 text-emerald-300" title="Conexión en vivo con Google Sheets activa. Todos los datos están seguros en la nube.">
+                  <Cloud className="w-3 h-3 text-emerald-400" />
+                  <span className="hidden xs:inline">Nube Activa</span>
+                </div>
+              )}
             </div>
           </div>
-        </div>
-      </header>
+
+          {/* Profiles navigation items */}
+          <div className="flex items-center gap-4">
+            {/* Support Indicator */}
+            <button
+              onClick={() => setCurrentScreen("guest")}
+              className="hidden md:flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-all font-sans font-semibold border border-neutral-800 rounded-full px-3 py-1 bg-neutral-900"
+              title="Vista de Huéspedes"
+            >
+              <Shield className="w-3 h-3 text-[#b2ceb4]" />
+              <span>Vista Huésped</span>
+            </button>
+
+            <button className="relative p-2 text-neutral-400 hover:text-white transition-colors duration-200">
+              <Bell className="w-5 h-5 text-[#b2ceb4]" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f6bb89] rounded-full"></span>
+            </button>
+
+            {/* User profile picture */}
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-[#4a634e]/50 flex items-center justify-center bg-neutral-900 shadow-inner">
+                <img
+                  alt="Representative Profile Avatar"
+                  className="w-full h-full object-cover"
+                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuDW65zXPLOw1us9DzxBw-YDhmH15Mg8dhFrxPDERUKIVl2LyHVY8o55u6DkinnfqDQct44ttHkytebFQCMTfaFj1zTuQVOT1JKTdwd18Qd-l8Vz894VUmYBapF_Mr_L90WVywWl7BRN9WqZkc-p_NPCEwga4_4cbC5WvyscFDXKoCvf_9DXKRIGHvKn8PlhpKY0bb0RWe6qrvWVmyjr3ctVEg7vy21Tfen-hTtet-DzpWJBUDJaJsymO_mPFcMpjSLlUGWnYwgJivvF"
+                />
+              </div>
+            </div>
+          </div>
+        </header>
+      )}
 
       {/* Main Content Render Layout */}
       <main className="relative z-10 flex-grow w-full max-w-container-max mx-auto px-6 py-8 pb-20">
         {currentScreen === "admin" && (
           <AdminLauncher
             onNavigate={(screen) => navigateTo(screen)}
-            onLogoutToGuest={() => {
-              navigateTo("guest");
-            }}
-            onLogoutOnly={() => {
-              localStorage.removeItem("pms_logged_in");
-              setIsAuthenticated(false);
-              navigateTo("admin");
-            }}
             stats={statsSummary}
             complexName={administracion[0]?.Nombre_complejo || "Gestion Cabañas"}
           />
@@ -510,6 +551,8 @@ export default function App() {
               if (viewBookingId) setViewBookingId(viewBookingId);
               navigateTo(screen);
             }}
+            onSaveBooking={handleAddBooking}
+            onSaveContratacion={handleAddContratacion}
           />
         )}
 
@@ -605,56 +648,138 @@ export default function App() {
           <GuestView
             cabanas={cabanas}
             reservas={reservas}
-            isAdminLoggedIn={isAuthenticated}
+            isAdminLoggedIn={isAuthenticated && new URLSearchParams(window.location.search).get("view") !== "guest"}
             onBackToAdmin={() => {
               window.history.replaceState({}, document.title, window.location.pathname);
               navigateTo("admin");
             }}
+            complexConfig={administracion[0]}
           />
         )}
       </main>
 
+      {/* Floating Global Settings Popover Dropdown */}
+      {isConfigDropdownOpen && (["calendar", "dashboard", "admin"].includes(currentScreen) || (currentScreen === "guest" && isAuthenticated)) && (
+        <>
+          {/* Invisible click-away backdrop */}
+          <div
+            onClick={() => setIsConfigDropdownOpen(false)}
+            className="fixed inset-0 z-40 bg-transparent"
+          />
+          
+          <div className="fixed bottom-18 right-6 w-56 bg-[#161916]/95 backdrop-blur-md border border-neutral-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-bottom-3 duration-200">
+            <div className="px-3.5 py-2 border-b border-neutral-900 mb-1">
+              <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase tracking-widest block">
+                Configuraciones
+              </span>
+            </div>
+            
+            {/* Nueva Cabaña */}
+            <button
+              onClick={() => {
+                setIsConfigDropdownOpen(false);
+                navigateTo("new-cabin");
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#252925] text-neutral-300 hover:text-white transition-all text-xs font-sans font-semibold cursor-pointer text-left"
+            >
+              <div className="w-6 h-6 rounded-lg bg-[#4a634e]/20 text-[#b2ceb4] flex items-center justify-center">
+                <Home className="w-3.5 h-3.5" />
+              </div>
+              Nueva Cabaña
+            </button>
+            
+            {/* Nuevo Servicio */}
+            <button
+              onClick={() => {
+                setIsConfigDropdownOpen(false);
+                navigateTo("new-service");
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#252925] text-neutral-300 hover:text-white transition-all text-xs font-sans font-semibold cursor-pointer text-left"
+            >
+              <div className="w-6 h-6 rounded-lg bg-[#4a634e]/20 text-[#b2ceb4] flex items-center justify-center">
+                <Settings className="w-3.5 h-3.5" />
+              </div>
+              Nuevo Servicio
+            </button>
+            
+            {/* Configurar Complejo */}
+            <button
+              onClick={() => {
+                setIsConfigDropdownOpen(false);
+                setIsConfigOpen(true);
+              }}
+              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#252925] text-neutral-300 hover:text-white transition-all text-xs font-sans font-semibold cursor-pointer text-left"
+            >
+              <div className="w-6 h-6 rounded-lg bg-[#4a634e]/20 text-[#f6bb89] flex items-center justify-center">
+                <Trees className="w-3.5 h-3.5" />
+              </div>
+              Configurar Complejo
+            </button>
+          </div>
+        </>
+      )}
+
       {/* Persistent Bottom Navigation Bar for Admin Primary Screens */}
-      {["calendar", "dashboard", "admin"].includes(currentScreen) ? (
+      {(["calendar", "dashboard", "admin"].includes(currentScreen) || (currentScreen === "guest" && isAuthenticated)) ? (
         <div className="fixed bottom-0 left-0 w-full bg-[#1b1e1b] border-t border-neutral-900/80 px-2 py-1.5 z-40 flex items-center justify-around shadow-2xl h-16 pb-safe">
-
-
-          {/* Tab 2: Calendar */}
+          
+          {/* Tab 1: Menú Principal */}
           <button
-            onClick={() => navigateTo("calendar")}
-            className={`flex flex-col items-center justify-center gap-1 w-16 h-full transition-all cursor-pointer ${
-              currentScreen === "calendar" ? "text-[#b2ceb4] scale-105 font-bold" : "text-neutral-500 hover:text-neutral-300"
-            }`}
-          >
-            <Calendar className="w-4.5 h-4.5" />
-            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">planificador</span>
-          </button>
-
-          {/* Tab 3: Metrics */}
-          <button
-            onClick={() => navigateTo("dashboard")}
-            className={`flex flex-col items-center justify-center gap-1 w-16 h-full transition-all cursor-pointer ${
-              currentScreen === "dashboard" ? "text-[#b2ceb4] scale-105 font-bold" : "text-neutral-500 hover:text-neutral-300"
-            }`}
-          >
-            <span className="material-symbols-outlined text-lg">
-              analytics
-            </span>
-            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">GRAFICOS</span>
-          </button>
-
-          {/* Tab 4: Settings launcher */}
-          <button
-            onClick={() => navigateTo("admin")}
+            onClick={() => {
+              setIsConfigDropdownOpen(false);
+              navigateTo("admin");
+            }}
             className={`flex flex-col items-center justify-center gap-1 w-16 h-full transition-all cursor-pointer ${
               currentScreen === "admin" ? "text-[#b2ceb4] scale-105 font-bold" : "text-neutral-500 hover:text-neutral-300"
             }`}
+            title="Menú Principal"
           >
-            <span className="material-symbols-outlined text-lg">
-              home
-            </span>
-            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">MENU PRINCIPAL</span>
+            <Home className="w-5 h-5" />
+            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">INICIO</span>
           </button>
+
+          {/* Tab 2: Vista Huésped */}
+          <button
+            onClick={() => {
+              setIsConfigDropdownOpen(false);
+              navigateTo("guest");
+            }}
+            className={`flex flex-col items-center justify-center gap-1 w-16 h-full transition-all cursor-pointer ${
+              currentScreen === "guest" ? "text-[#b2ceb4] scale-105 font-bold" : "text-neutral-500 hover:text-neutral-300"
+            }`}
+            title="Ver Catálogo Huésped"
+          >
+            <User className="w-5 h-5" />
+            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">HUÉSPED</span>
+          </button>
+
+          {/* Tab 3: Cerrar Sesión */}
+          <button
+            onClick={() => {
+              setIsConfigDropdownOpen(false);
+              localStorage.removeItem("pms_logged_in");
+              setIsAuthenticated(false);
+              navigateTo("admin");
+            }}
+            className="flex flex-col items-center justify-center gap-1 w-16 h-full transition-all cursor-pointer text-red-400/80 hover:text-red-300"
+            title="Cerrar Sesión de Administrador"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">SALIR</span>
+          </button>
+
+          {/* Tab 4: Configuración (Toggles popover) */}
+          <button
+            onClick={() => setIsConfigDropdownOpen(!isConfigDropdownOpen)}
+            className={`flex flex-col items-center justify-center gap-1 w-16 h-full transition-all cursor-pointer ${
+              isConfigDropdownOpen ? "text-[#f6bb89] scale-105 font-bold" : "text-neutral-500 hover:text-neutral-300"
+            }`}
+            title="Configuración global de recursos"
+          >
+            <Settings className={`w-5 h-5 transition-transform duration-300 ${isConfigDropdownOpen ? "rotate-45" : ""}`} />
+            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">AJUSTES</span>
+          </button>
+
         </div>
       ) : (
         /* Form editing back button footer fallback for mobile safety */
@@ -669,6 +794,14 @@ export default function App() {
           </div>
         )
       )}
+
+      {/* Global ConfigModal root integration */}
+      <ConfigModal
+        isOpen={isConfigOpen}
+        onClose={() => setIsConfigOpen(false)}
+        config={administracion[0]}
+        onSave={handleSaveConfig}
+      />
     </div>
   );
 }

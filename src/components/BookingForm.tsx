@@ -102,7 +102,7 @@ export default function BookingForm({
   const exceedsCapacity = selectedCabinObj && pasajeros > selectedCabinObj.capacidad;
 
   // Deposit validation
-  const hasDepositError = !!(Number(montoTotal) > 0 && Number(montoAnticipo) >= Number(montoTotal));
+  const hasDepositError = !!(Number(montoTotal) > 0 && Number(montoAnticipo) >= Number(montoTotal) && estadoReserva !== "Pagada");
 
   // Form disable logic
   const isFormDisabled = isClientBlockedOrSuspended || isCabinNotAvailable || hasDateError || exceedsCapacity || hasDepositError;
@@ -492,7 +492,7 @@ export default function BookingForm({
     }
 
     if (hasDepositError) {
-      alert("Error: El monto de anticipo/depósito debe ser menor que el monto total de la reserva.");
+      alert("Error: El monto del abono debe ser menor que el monto total de la reserva.");
       return;
     }
 
@@ -585,7 +585,7 @@ export default function BookingForm({
                 )}
                 {hasDepositError && (
                   <span className="text-[10px] font-sans font-bold bg-red-950/45 text-red-400 border border-red-900/40 px-3 py-1 rounded-full animate-pulse shadow-md shadow-red-950/20 block text-right">
-                    ⚠️ El anticipo debe ser menor que el monto total
+                    ⚠️ El abono debe ser menor que el monto total
                   </span>
                 )}
               </div>
@@ -708,7 +708,7 @@ export default function BookingForm({
                     title={viewBookingId ? "No se puede modificar la fecha de reserva" : "Haga clic para seleccionar la fecha de reserva"}
                   >
                     <span className="text-xs font-bold text-neutral-200">
-                      {fechaReserva || "Seleccionar..."}
+                      {formatToYYMMDD(fechaReserva)}
                     </span>
                     <Calendar className="w-3.5 h-3.5 text-white" />
                   </div>
@@ -877,7 +877,7 @@ export default function BookingForm({
             {/* Monto Anticipo */}
             <div className="space-y-1">
               <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide">
-                Monto Anticipo / Depósito ($)
+                Abono ($)
               </label>
               <div className="relative">
                 <span className={`absolute left-3 top-1/2 -translate-y-1/2 font-bold text-sm ${hasDepositError ? "text-red-400" : "text-neutral-500"}`}>$</span>
@@ -909,11 +909,11 @@ export default function BookingForm({
                 <select
                   value={estadoReserva}
                   onChange={(e) => setEstadoReserva(e.target.value as any)}
-                  disabled={!isEditMode}
+                  disabled={true}
                   className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
                 >
                   <option value="Pendiente de Pago">Pendiente de Pago</option>
-                  <option value="Cancelada">Cancelada</option>
+                  <option value="Pagada">Pagada</option>
                 </select>
                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
                   expand_more

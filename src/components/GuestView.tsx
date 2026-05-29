@@ -6,15 +6,25 @@
 import { useState } from "react";
 import { motion } from "motion/react";
 import { Calendar, ChevronLeft, ChevronRight, MessageSquare, Phone, LogOut, Check, X, ShieldAlert, Home, Share2 } from "lucide-react";
-import { Cabana, Reserva } from "../types";
+import { Cabana, Reserva, Administracion } from "../types";
 
 interface GuestViewProps {
   cabanas: Cabana[];
   reservas: Reserva[];
   onBackToAdmin: () => void;
+  isAdminLoggedIn?: boolean;
+  complexConfig?: Administracion;
 }
 
-export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestViewProps) {
+export default function GuestView({ cabanas, reservas, onBackToAdmin, isAdminLoggedIn, complexConfig }: GuestViewProps) {
+  const whatsappNum = String(complexConfig?.Whatsapp || "5491112345678");
+  const telefonoNum = String(complexConfig?.Telefono || "+5491112345678");
+
+  // Clean WhatsApp for link: keep only digits
+  const cleanWhatsapp = whatsappNum.replace(/[^0-9]/g, "");
+  const whatsappLink = `https://wa.me/${cleanWhatsapp}`;
+  const phoneLink = `tel:${telefonoNum.replace(/\s+/g, "")}`;
+
   const [copied, setCopied] = useState(false);
 
   const handleShareLink = () => {
@@ -123,21 +133,23 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
             {copied ? <Check className="w-5 h-5" /> : <Share2 className="w-5 h-5" />}
           </button>
 
-          {/* Go Back / Home Button (Icon-Only) */}
-          <button
-            onClick={onBackToAdmin}
-            type="button"
-            className="p-2.5 bg-neutral-900 text-neutral-400 border border-neutral-800 hover:bg-neutral-850 hover:text-white rounded-xl transition-all active:scale-95 shadow-md cursor-pointer flex items-center justify-center"
-            title="Volver al Menú Principal"
-          >
-            <Home className="w-5 h-5" />
-          </button>
+          {/* Close Preview / Back Button (Icon-Only) - Only shown to Admin in preview mode, completely hidden on public guest link */}
+          {isAdminLoggedIn && new URLSearchParams(window.location.search).get("view") !== "guest" && (
+            <button
+              onClick={onBackToAdmin}
+              type="button"
+              className="p-2.5 bg-neutral-900 text-neutral-400 border border-neutral-800 hover:bg-neutral-850 hover:text-white rounded-xl transition-all active:scale-95 shadow-md cursor-pointer flex items-center justify-center"
+              title="Volver al Menú Principal"
+            >
+              <Home className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </section>
 
       {/* Grid of Cabin slider-containers (Sideways scroll on mobile, vertical list on desktop) */}
       <section className="flex flex-row overflow-x-auto lg:flex-col lg:space-y-8 gap-6 lg:gap-0 pb-6 lg:pb-0 scroll-smooth snap-x snap-mandatory scrollbar-thin scrollbar-thumb-neutral-850">
-        {cabanas.map((cab) => {
+        {(cabanas || []).map((cab) => {
           const isAvailable = cab.estado === "Disponible";
 
           return (
@@ -258,7 +270,7 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
                   {/* Numerical metadata counters */}
                   <div className="bg-[#121412] rounded-xl p-4 grid grid-cols-5 gap-2 border border-neutral-850 text-center shadow-inner">
                     <div className="flex flex-col">
-                      <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase tracking-wider">
+                      <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase tracking-wider truncate">
                         Superficie
                       </span>
                       <span className="text-xs font-headline font-semibold text-neutral-200 mt-1">
@@ -320,7 +332,7 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <a
-              href="https://wa.me/5491112345678"
+              href={whatsappLink}
               target="_blank"
               rel="noreferrer"
               className="flex items-center justify-center gap-2 bg-[#4a634e] text-white rounded-full px-6 py-2.5 hover:brightness-110 active:scale-95 transition-all font-sans text-xs font-bold uppercase tracking-wider cursor-pointer"
@@ -329,7 +341,7 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin }: GuestVie
               WhatsApp
             </a>
             <a
-              href="tel:+5491112345678"
+              href={phoneLink}
               className="flex items-center justify-center gap-2 border border-[#D29B6C] text-[#f6bb89] rounded-full px-6 py-2.5 hover:bg-neutral-800 active:scale-95 transition-all font-sans text-xs font-bold uppercase tracking-wider cursor-pointer"
             >
               <Phone className="w-4 h-4 animate-bounce" />

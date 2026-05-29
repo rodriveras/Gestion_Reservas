@@ -28,7 +28,7 @@ const TABLAS = {
   servicios: ["id", "nombre", "descripcion", "precio", "tipoCobro", "tipoPago", "estado"],
   reservas: ["id", "clienteId", "cabanaId", "fechaReserva", "checkIn", "checkOut", "noches", "cantidadPersonas", "canalVentas", "montoTotal", "montoAnticipo", "estadoReserva", "metodoPago"],
   contrataciones: ["id", "reservaId", "clienteId", "servicioId", "fecha", "precioPactado", "cantidad", "subtotal", "estadoPago", "medioPago"],
-  administracion: ["Nombre_complejo", "Usuario", "Contrasena"]
+  administracion: ["id", "Nombre_complejo", "Usuario", "Contrasena", "Telefono", "Whatsapp"]
 };
 
 // Datos semilla iniciales para poblar la hoja de cálculo al inicializar
@@ -60,7 +60,7 @@ const SEED_DATA = {
     ["CON-02", "RES-77824", "CLI-77824", "02", "2024-06-12", 15, 3, 45, "Pendiente", "Transferencia"]
   ],
   administracion: [
-    ["ENTRE NIEVES", "admin@entrenieves.com", "nieves2026"]
+    ["admin-config", "ENTRE NIEVES", "admin@entrenieves.com", "nieves2026", "+5491112345678", "5491112345678"]
   ]
 };
 
