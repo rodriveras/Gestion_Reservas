@@ -50,92 +50,51 @@ export default function AdminLauncher({
           </h1>
         </div>
       </section>
-
       {/* Grid Categories */}
       <div className="space-y-4 md:space-y-8">
-        {/* PRIORIDADES */}
-        <div className="space-y-1.5 md:space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-3 bg-[#f6bb89] rounded-full"></span>
-            <h2 className="text-xs md:text-sm font-sans font-bold text-neutral-400 uppercase tracking-widest px-1">
-              Prioridades
-            </h2>
-          </div>
-          <div className="grid grid-cols-2 gap-3 md:gap-4">
-            <button
-              id="btn-shortcut-calendar"
-              onClick={() => onNavigate("calendar")}
-              className="flex items-center justify-center p-3 xs:p-4 md:p-6 bg-[#1b1e1b] border-t-2 border-[#D29B6C] border-x border-b border-neutral-800/40 rounded-xl hover:bg-[#252925] transition-all cursor-pointer group flex-col gap-2 md:gap-3 min-h-[100px] xs:min-h-[120px] md:min-h-[140px]"
-            >
-              <div className="bg-[#4a634e]/20 text-[#b2ceb4] rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform w-10 h-10 md:w-14 md:h-14 shadow-inner shrink-0">
-                <Calendar className="w-5 h-5 md:w-7 md:h-7" />
-              </div>
-              <span className="text-xs md:text-sm font-sans font-semibold text-neutral-200 text-center line-clamp-2">
-                Calendario de Reservas
-              </span>
-            </button>
+        <div className="flex flex-col gap-3.5 max-w-sm mx-auto w-full px-4 pt-1">
+          <button
+            id="btn-shortcut-calendar"
+            onClick={() => onNavigate("calendar")}
+            className="w-full py-3.5 md:py-4 px-6 bg-[#f3f4f6] hover:bg-white text-neutral-900 font-sans font-medium rounded-full text-xs md:text-sm transition-all cursor-pointer text-center active:scale-[0.98] shadow-md"
+          >
+            Gestor de Reservas
+          </button>
 
-            <button
-              id="btn-shortcut-dashboard"
-              onClick={() => onNavigate("dashboard")}
-              className="flex items-center justify-center p-3 xs:p-4 md:p-6 bg-[#1b1e1b] border-t-2 border-[#D29B6C] border-x border-b border-neutral-800/40 rounded-xl hover:bg-[#252925] transition-all cursor-pointer group flex-col gap-2 md:gap-3 min-h-[100px] xs:min-h-[120px] md:min-h-[140px]"
-            >
-              <div className="bg-[#4a634e]/20 text-[#b2ceb4] rounded-xl flex items-center justify-center group-hover:scale-105 transition-transform w-10 h-10 md:w-14 md:h-14 shadow-inner shrink-0">
-                <Grid className="w-5 h-5 md:w-7 md:h-7" />
-              </div>
-              <span className="text-xs md:text-sm font-sans font-semibold text-neutral-200 text-center line-clamp-2">
-                Dashboard de Análisis
-              </span>
-            </button>
-          </div>
+          <button
+            id="btn-shortcut-dashboard"
+            onClick={() => onNavigate("dashboard")}
+            className="w-full py-3.5 md:py-4 px-6 bg-transparent border border-white/20 hover:bg-white/5 hover:border-white/30 text-white font-sans font-medium rounded-full text-xs md:text-sm transition-all cursor-pointer text-center active:scale-[0.98]"
+          >
+            Análisis Estratégico
+          </button>
         </div>
 
         {/* CREACIÓN Y GESTIÓN */}
-        <div className="space-y-1.5 md:space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-3 bg-[#b2ceb4] rounded-full"></span>
-            <h2 className="text-xs md:text-sm font-sans font-bold text-neutral-400 uppercase tracking-widest px-1">
-              Creación y Gestión
-            </h2>
-          </div>
-          <div className="grid grid-cols-3 gap-2.5 md:gap-3">
+        <div className="max-w-sm mx-auto w-full px-4 pt-1">
+          <div className="grid grid-cols-3 gap-2 xs:gap-2.5 md:gap-3 w-full">
             <button
               id="btn-shortcut-client"
               onClick={() => onNavigate("new-client")}
-              className="flex items-center justify-center p-2 xs:p-3 md:p-4 bg-[#1b1e1b] border-t-2 border-[#b2ceb4] border-x border-b border-neutral-800/40 rounded-xl hover:bg-[#252925] transition-all cursor-pointer group flex-col gap-1.5 md:gap-2 min-h-[85px] xs:min-h-[100px] md:min-h-[120px]"
+              className="w-full py-2.5 px-1 bg-[#4a634e]/15 border border-[#b2ceb4]/30 hover:bg-[#4a634e]/25 text-[#b2ceb4] font-sans font-semibold rounded-full text-[8px] xs:text-[9px] sm:text-[10px] md:text-[11px] transition-all cursor-pointer text-center active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
             >
-              <div className="bg-[#4a634e]/20 text-[#b2ceb4] rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform w-8 h-8 md:w-11 md:h-11 shrink-0">
-                <UserPlus className="w-4 h-4 md:w-5 md:h-5" />
-              </div>
-              <span className="text-[10px] xs:text-xs font-sans font-semibold text-neutral-300 text-center line-clamp-1">
-                Nuevo Cliente
-              </span>
+              Nuevo Cliente
             </button>
 
             <button
               id="btn-shortcut-booking"
               onClick={() => onNavigate("new-booking")}
-              className="flex items-center justify-center p-2 xs:p-3 md:p-4 bg-[#1b1e1b] border-t-2 border-[#b2ceb4] border-x border-b border-neutral-800/40 rounded-xl hover:bg-[#252925] transition-all cursor-pointer group flex-col gap-1.5 md:gap-2 min-h-[85px] xs:min-h-[100px] md:min-h-[120px]"
+              className="w-full py-2.5 px-1 bg-[#f6bb89]/10 border border-[#f6bb89]/30 hover:bg-[#f6bb89]/20 text-[#f6bb89] font-sans font-semibold rounded-full text-[8px] xs:text-[9px] sm:text-[10px] md:text-[11px] transition-all cursor-pointer text-center active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
             >
-              <div className="bg-[#4a634e]/20 text-[#b2ceb4] rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform w-8 h-8 md:w-11 md:h-11 shrink-0">
-                <Sparkles className="w-4 h-4 md:w-5 md:h-5" />
-              </div>
-              <span className="text-[10px] xs:text-xs font-sans font-semibold text-neutral-300 text-center line-clamp-1">
-                Nueva Reserva
-              </span>
+              Nueva Reserva
             </button>
 
             <button
               id="btn-shortcut-contract"
               onClick={() => onNavigate("contract-service")}
-              className="flex items-center justify-center p-2 xs:p-3 md:p-4 bg-[#1b1e1b] border-t-2 border-[#b2ceb4] border-x border-b border-neutral-800/40 rounded-xl hover:bg-[#252925] transition-all cursor-pointer group flex-col gap-1.5 md:gap-2 min-h-[85px] xs:min-h-[100px] md:min-h-[120px]"
+              className="w-full py-2.5 px-1 bg-neutral-800/40 border border-neutral-700/60 hover:bg-neutral-800/70 text-neutral-300 font-sans font-semibold rounded-full text-[8px] xs:text-[9px] sm:text-[10px] md:text-[11px] transition-all cursor-pointer text-center active:scale-95 whitespace-nowrap overflow-hidden text-ellipsis"
             >
-              <div className="bg-[#4a634e]/20 text-[#b2ceb4] rounded-lg flex items-center justify-center group-hover:scale-105 transition-transform w-8 h-8 md:w-11 md:h-11 shrink-0">
-                <FilePlus className="w-4 h-4 md:w-5 md:h-5" />
-              </div>
-              <span className="text-[10px] xs:text-xs font-sans font-semibold text-neutral-300 text-center line-clamp-1">
-                Contratar Serv.
-              </span>
+              Contratar Serv.
             </button>
           </div>
         </div>

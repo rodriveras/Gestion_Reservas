@@ -536,9 +536,6 @@ export default function BookingForm({
           <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
             {existingBooking ? "Consulta de reserva" : "Nueva Reserva"}
           </h2>
-          <p className="text-neutral-400 font-sans text-sm mt-1 font-medium">
-            {existingBooking ? "Información detallada de la reserva seleccionada" : "información de la nueva reserva"}
-          </p>
         </div>
 
         <div className="bg-[#1b1e1b] px-4 py-2.5 rounded-xl border border-neutral-800 flex items-center gap-3">
@@ -636,7 +633,7 @@ export default function BookingForm({
                 </div>
               </div>
 
-              {/* Cabin & Stay duration row */}
+              {/* Cabin & Booking date row */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                 <div className="space-y-1 md:col-span-2">
                   <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
@@ -666,36 +663,6 @@ export default function BookingForm({
                   </div>
                 </div>
 
-                <div className="space-y-1">
-                  <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                    Cantidad de Días
-                  </label>
-                  <div className="flex items-center bg-[#121412] border border-neutral-700 rounded-lg overflow-hidden h-11">
-                    <button
-                      type="button"
-                      disabled={!isEditMode || !!viewBookingId}
-                      onClick={() => setNoches((n) => Math.max(1, n - 1))}
-                      className="px-4 text-[#b2ceb4] hover:bg-neutral-850 text-2xl font-bold h-full border-r border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      -
-                    </button>
-                    <span className="flex-1 text-center font-bold text-xl text-neutral-100 select-none">
-                      {noches}
-                    </span>
-                    <button
-                      type="button"
-                      disabled={!isEditMode || !!viewBookingId}
-                      onClick={() => setNoches((n) => Math.min(30, n + 1))}
-                      className="px-4 text-[#b2ceb4] hover:bg-neutral-850 text-2xl font-bold h-full border-l border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      +
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Booking date & Head count passengers counter */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                 <div className="space-y-1 relative">
                   <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
                     Fecha de Reserva
@@ -720,31 +687,59 @@ export default function BookingForm({
                     </div>
                   )}
                 </div>
+              </div>
+
+              {/* Stay duration & Head count passengers counter */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                <div className="space-y-1">
+                  <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
+                    Cantidad de Días
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={noches}
+                      onChange={(e) => setNoches(Number(e.target.value))}
+                      disabled={!isEditMode || !!viewBookingId}
+                      className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed h-11"
+                    >
+                      {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={n}>
+                          {n} {n === 1 ? "Día" : "Días"}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
+                      date_range
+                    </span>
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                      expand_more
+                    </span>
+                  </div>
+                </div>
 
                 <div className="space-y-1">
                   <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
                     Cantidad de Personas
                   </label>
-                  <div className="flex items-center bg-[#121412] border border-neutral-700 rounded-lg overflow-hidden h-11">
-                    <button
-                      type="button"
+                  <div className="relative">
+                    <select
+                      value={pasajeros}
+                      onChange={(e) => setPasajeros(Number(e.target.value))}
                       disabled={!isEditMode}
-                      onClick={() => setPasajeros((p) => Math.max(1, p - 1))}
-                      className="px-4 text-[#b2ceb4] hover:bg-neutral-850 text-2xl font-bold h-full border-r border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed h-11"
                     >
-                      -
-                    </button>
-                    <span className="flex-1 text-center font-bold text-xl text-neutral-100 select-none">
-                      {pasajeros}
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((p) => (
+                        <option key={p} value={p}>
+                          {p} {p === 1 ? "Persona" : "Personas"}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
+                      group
                     </span>
-                    <button
-                      type="button"
-                      disabled={!isEditMode}
-                      onClick={() => setPasajeros((p) => Math.min(10, p + 1))}
-                      className="px-4 text-[#b2ceb4] hover:bg-neutral-850 text-2xl font-bold h-full border-l border-neutral-800 flex items-center justify-center transition-colors cursor-pointer select-none disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      +
-                    </button>
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                      expand_more
+                    </span>
                   </div>
                 </div>
               </div>
@@ -854,7 +849,7 @@ export default function BookingForm({
             Información Financiera
           </h4>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Monto Total */}
             <div className="space-y-1">
               <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide">

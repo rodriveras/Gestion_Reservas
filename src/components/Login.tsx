@@ -21,7 +21,7 @@ export default function Login({
   complexName = "Entre Nieves"
 }: LoginProps) {
   const [username, setUsername] = useState("admin@entrenieves.com");
-  const [password, setPassword] = useState("nieves2026");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -166,18 +166,6 @@ export default function Login({
           </button>
         </form>
 
-        {/* Sandbox Bypass Interactive Trigger */}
-        <div className="text-center pt-1 border-t border-neutral-900/60">
-          <button
-            type="button"
-            onClick={handleSandboxBypass}
-            disabled={isSubmitting}
-            className="text-[8px] md:text-[9px] font-sans font-bold text-neutral-500 uppercase tracking-widest hover:text-[#d29b6c] transition-colors cursor-pointer disabled:opacity-50"
-            title="Ingresar directamente sin validar contraseñas"
-          >
-            Sandbox Active. Click button to bypass test credentials.
-          </button>
-        </div>
       </motion.div>
 
       {/* Footer Branding Area */}

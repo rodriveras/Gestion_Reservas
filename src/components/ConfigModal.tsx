@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useEffect } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { X, Save, Phone, MessageSquare, Shield, HelpCircle, Trees } from "lucide-react";
 import { Administracion } from "../types";
@@ -25,6 +25,17 @@ export default function ConfigModal({ isOpen, onClose, config, onSave }: ConfigM
   const [isSaving, setIsSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
+  // Synchronize input fields with config prop when modal opens or config updates from the cloud
+  useEffect(() => {
+    if (isOpen && config) {
+      setNombreComplejo(config.Nombre_complejo || "");
+      setTelefono(config.Telefono || "");
+      setWhatsapp(config.Whatsapp || "");
+      setUsuario(config.Usuario || "");
+      setContrasena(config.Contrasena || "");
+    }
+  }, [isOpen, config]);
+
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -41,7 +52,8 @@ export default function ConfigModal({ isOpen, onClose, config, onSave }: ConfigM
     };
 
     try {
-      await onSave(updated);
+      onSave(updated);
+      alert("¡Configuración de parámetros guardada con éxito!");
       onClose();
     } catch (err) {
       console.error("Error al guardar la configuración:", err);
@@ -82,7 +94,7 @@ export default function ConfigModal({ isOpen, onClose, config, onSave }: ConfigM
                   <Trees className="w-4.5 h-4.5 text-[#b2ceb4]" />
                 </div>
                 <h3 className="text-base sm:text-lg font-headline font-bold text-white">
-                  Configuración de Ladrillos y Contacto
+                  Configuración de Parámetros
                 </h3>
               </div>
               <button

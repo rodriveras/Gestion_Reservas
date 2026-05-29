@@ -5,7 +5,7 @@
 
 import { useState, FormEvent } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Save, Plus, ShieldAlert, Award } from "lucide-react";
+import { ArrowLeft, Save, Plus, ShieldAlert, Award, Edit } from "lucide-react";
 import { Servicio } from "../types";
 
 interface ServiceFormProps {
@@ -84,11 +84,10 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
             <ArrowLeft className="w-4 h-4" />
             Volver
           </button>
-          <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
+          <h2 className="text-2xl font-headline font-bold text-white">
             {isEditingState ? "Editar Servicio" : "Nuevo Servicio"}
           </h2>
         </div>
-
         {/* Edit Service button and selector moved to the right */}
         {servicios && servicios.length > 0 && (
           <div className="flex items-center gap-3 self-start md:self-auto">
@@ -100,14 +99,14 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
                   handleSelectServiceToEdit("");
                 }
               }}
-              className={`flex items-center gap-2 px-4.5 py-2.5 text-xs font-sans font-extrabold rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg ${
+              title={isEditingState ? "Modo Nuevo Servicio" : "Editar Servicio"}
+              className={`w-11 h-11 flex items-center justify-center rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg shrink-0 border ${
                 isEditingState
-                  ? "bg-[#1b1e1b] text-neutral-400 hover:text-white border border-neutral-800 hover:bg-neutral-800"
-                  : "bg-[#4a634e] text-white hover:bg-[#5b7a60] border border-[#b2ceb4]/40 shadow-emerald-950/40"
+                  ? "bg-[#1e201e] text-[#b2ceb4] border-[#4a634e] ring-2 ring-[#b2ceb4]/10"
+                  : "bg-[#1b1e1b] text-[#f6bb89] border-neutral-800 hover:text-white hover:bg-neutral-800"
               }`}
             >
-              <span className="material-symbols-outlined text-sm">edit</span>
-              {isEditingState ? "Modo Nuevo Servicio" : "Editar Servicio"}
+              <Edit className="w-5 h-5" />
             </button>
 
             {isEditingState && (
@@ -115,7 +114,7 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
                 <select
                   value={selectedServiceId}
                   onChange={(e) => handleSelectServiceToEdit(e.target.value)}
-                  className="pl-3 pr-8 py-2 bg-[#121412] text-xs font-medium text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg outline-none appearance-none cursor-pointer min-w-[200px]"
+                  className="pl-3 pr-8 py-2 bg-[#121412] text-xs font-medium text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg outline-none appearance-none cursor-pointer min-w-[200px] h-11"
                 >
                   <option value="">-- Seleccione Servicio --</option>
                   {servicios.map((s) => (
@@ -268,19 +267,19 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
             </div>
 
             {/* Action Buttons inside Card */}
-            <div className="mt-10 flex flex-col sm:flex-row gap-4 relative z-10 border-t border-neutral-900 pt-6">
+            <div className="mt-10 grid grid-cols-2 gap-3 relative z-10 border-t border-neutral-900 pt-6">
               <button
                 id="submit-new-service"
                 type="submit"
-                className="flex-1 bg-[#4a634e] text-white py-4 rounded-lg font-semibold hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-widest"
+                className="w-full py-4 bg-[#4a634e] text-white font-bold rounded-xl shadow-lg hover:brightness-110 active:scale-95 transition-all text-xs font-sans uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Save className="w-4 h-4" />
-                Guardar Servicio
+                Guardar
               </button>
               <button
                 type="button"
                 onClick={onBack}
-                className="flex-1 border border-[#D29B6C] text-[#f6bb89] py-4 rounded-lg font-semibold hover:bg-neutral-850 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer text-xs uppercase tracking-widest"
+                className="w-full py-4 bg-neutral-900 hover:bg-neutral-850 text-neutral-400 hover:text-white font-bold rounded-xl border border-neutral-850 transition-all text-xs font-sans uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer"
               >
                 Cancelar
               </button>

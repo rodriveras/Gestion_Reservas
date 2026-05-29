@@ -113,11 +113,8 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin, isAdminLog
       {/* Branding Headline & Controls */}
       <section className="flex flex-row justify-between items-start w-full gap-4 pb-2 border-b border-neutral-900/40">
         <div className="text-left">
-          <span className="text-xs font-sans font-bold text-[#f6bb89] uppercase tracking-widest block mb-1">
-            Experiencia de Lujo
-          </span>
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-headline font-bold text-[#b2ceb4]">
-            Nuestras Cabañas
+          <h2 className="text-xl sm:text-2xl md:text-3xl font-headline font-bold text-white">
+            Cabañas Entre Nieves
           </h2>
         </div>
 
@@ -185,16 +182,7 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin, isAdminLog
                       <h4 className="text-2xl font-headline font-semibold text-neutral-100">
                         {cab.nombre}
                       </h4>
-                      <p className="text-xs font-sans italic text-[#f6bb89] font-medium mt-1">
-                        {cab.slogan || (
-                          cab.id === "CAB-01"
-                            ? "Un susurro entre las copas de los árboles."
-                            : cab.id === "CAB-02"
-                            ? "Donde el tiempo se detiene al amanecer."
-                            : "Vistas infinitas hacia el corazón del bosque."
-                        )}
-                      </p>
-                      <p className="text-xs text-neutral-200 mt-4 leading-relaxed font-sans font-normal">
+                      <p className="text-xs text-neutral-200 mt-2 leading-relaxed font-sans font-normal">
                         {cab.descripcion}
                       </p>
                     </div>

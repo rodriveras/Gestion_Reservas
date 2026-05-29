@@ -126,21 +126,18 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
           <ArrowLeft className="w-4 h-4" />
           Volver
         </button>
-        <span className="text-[10px] font-sans font-bold text-[#f6bb89] uppercase tracking-widest block mb-1">
-          Vinculación de Servicios Adicionales
-        </span>
-        <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
+        <h2 className="text-2xl font-headline font-bold text-white">
           Contratar Servicio
         </h2>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6 pb-20">
-        {/* Section 1: Detalles del Vínculo */}
-        <section className="bg-[#1b1e1b] rounded-xl p-6 border-t-2 border-[#D29B6C] border-x border-b border-neutral-850 shadow-md space-y-5">
+        {/* Section 1: Detalles del Servicio */}
+        <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
           <h3 className="text-base font-sans font-bold text-neutral-100 flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-neutral-850">
             <div className="flex items-center gap-2">
               <LinkIcon className="w-4.5 h-4.5 text-[#f6bb89]" />
-              <span>Detalles del Vínculo</span>
+              <span>Detalles del Servicio</span>
             </div>
             {/* Warning banner removed from here and relocated next to label */}
           </h3>
@@ -229,7 +226,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
                   required
                   value={servicioId}
                   onChange={(e) => handleServicioChange(e.target.value)}
-                  className="w-full pl-10 pr-10 bg-[#121412] text-[#e2e3df] border border-neutral-700/80 focus:border-[#b2ceb4] rounded-lg p-3 text-xs outline-none appearance-none cursor-pointer"
+                  className="w-full pl-10 pr-10 bg-[#121412] text-[#e2e3df] border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs outline-none appearance-none cursor-pointer"
                 >
                   <option value="">Buscar servicio...</option>
                   {servicios.map((s) => (
@@ -250,13 +247,13 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
         </section>
 
         {/* Section 2: Condiciones y Valores */}
-        <section className="bg-[#1b1e1b] rounded-xl p-6 border-t-2 border-[#D29B6C] border-x border-b border-neutral-850 shadow-md space-y-5">
+        <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
           <h3 className="text-base font-sans font-bold text-neutral-100 flex items-center gap-2 pb-2 border-b border-neutral-850">
             <span className="material-symbols-outlined text-[#f6bb89] font-bold">payments</span>
             Condiciones y Valores
           </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Fecha contratación */}
             <div className="space-y-1">
               <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
@@ -274,7 +271,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
             {/* Precio Pactado */}
             <div className="space-y-1">
               <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                Precio Pactado (USD)
+                Precio Pactado (CLP)
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 font-semibold text-xs">$</span>
@@ -309,7 +306,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
               <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
                 Subtotal
               </label>
-              <div className="bg-[#292a28] rounded-lg p-3 border border-neutral-800 flex justify-between items-center min-h-[46px]">
+              <div className="bg-[#121412] rounded-lg p-3 border border-neutral-700 flex justify-between items-center min-h-[46px]">
                 <span className="text-[10px] text-neutral-400 uppercase font-sans font-semibold">Cálculo automático</span>
                 <span className="text-sm font-headline font-bold text-[#b2ceb4]">${calculatedSubtotal.toFixed(2)}</span>
               </div>
@@ -318,7 +315,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
         </section>
 
         {/* Section 3: Estado y Pago */}
-        <section className="bg-[#1b1e1b] rounded-xl p-6 border-t-2 border-[#D29B6C] border-x border-b border-neutral-850 shadow-md space-y-5">
+        <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
           <h3 className="text-base font-sans font-bold text-neutral-100 flex items-center gap-2 pb-2 border-b border-neutral-850">
             <span className="material-symbols-outlined text-[#f6bb89] font-bold">verified_user</span>
             Estado y Pago
@@ -366,23 +363,23 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
           </div>
         </section>
 
-        {/* Action Triggers */}
-        <div className="flex flex-col md:flex-row gap-4 justify-end pt-4 border-t border-neutral-900">
-          <button
-            type="button"
-            onClick={onBack}
-            className="md:px-8 py-3.5 rounded-lg border border-[#D29B6C] text-[#f6bb89] hover:bg-neutral-850 transition-all font-sans font-semibold text-xs uppercase tracking-widest active:scale-95 cursor-pointer"
-          >
-            Cancelar
-          </button>
+        {/* Action triggers */}
+        <div className="flex flex-row gap-4 pt-6 border-t border-neutral-900">
           <button
             id="submit-contract-service"
             type="submit"
             disabled={!reservaId || !clienteId || !servicioId}
-            className="md:px-8 py-3.5 bg-[#4a634e] text-white rounded-lg font-sans font-bold text-xs uppercase tracking-widest shadow-lg hover:brightness-110 transition-all active:scale-95 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1 py-4 bg-[#4a634e] text-white font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg hover:brightness-110 transition-all text-xs font-sans uppercase tracking-widest cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            <Save className="w-4 h-4" />
-            Guardar Contratación
+            <Save className="w-4 h-4 ml-1" />
+            Guardar
+          </button>
+          <button
+            type="button"
+            onClick={onBack}
+            className="flex-1 py-4 bg-neutral-900 hover:bg-neutral-850 text-neutral-400 font-bold rounded-xl flex items-center justify-center gap-2 border border-neutral-850 transition-all text-xs font-sans uppercase tracking-widest cursor-pointer"
+          >
+            Cancelar
           </button>
         </div>
       </form>

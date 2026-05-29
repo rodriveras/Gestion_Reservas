@@ -5,7 +5,7 @@
 
 import { useState, FormEvent } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, Save, MapPin, Eye, Zap, Shield, Image as ImageIcon } from "lucide-react";
+import { ArrowLeft, Save, MapPin, Eye, Zap, Shield, Image as ImageIcon, Edit } from "lucide-react";
 import { Cabana } from "../types";
 
 interface CabinFormProps {
@@ -109,7 +109,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
           Volver
         </button>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
+          <h2 className="text-2xl font-headline font-bold text-white">
             {isEditingState ? "Editar Cabaña" : "Nueva Cabaña"}
           </h2>
           {cabanas && cabanas.length > 0 && (
@@ -122,14 +122,14 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
                     handleSelectCabinToEdit("");
                   }
                 }}
-                className={`flex items-center gap-2 px-4.5 py-2.5 text-xs font-sans font-extrabold rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg ${
+                title={isEditingState ? "Modo Nueva Cabaña" : "Editar Cabaña"}
+                className={`w-11 h-11 flex items-center justify-center rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg shrink-0 border ${
                   isEditingState
-                    ? "bg-[#1b1e1b] text-neutral-400 hover:text-white border border-neutral-800 hover:bg-neutral-800"
-                    : "bg-[#4a634e] text-white hover:bg-[#5b7a60] border border-[#b2ceb4]/40 shadow-emerald-950/40"
+                    ? "bg-[#1e201e] text-[#b2ceb4] border-[#4a634e] ring-2 ring-[#b2ceb4]/10"
+                    : "bg-[#1b1e1b] text-[#f6bb89] border-neutral-800 hover:text-white hover:bg-neutral-800"
                 }`}
               >
-                <span className="material-symbols-outlined text-sm">edit</span>
-                {isEditingState ? "Modo Nueva Cabaña" : "Editar Cabaña"}
+                <Edit className="w-5 h-5" />
               </button>
 
               {isEditingState && (
@@ -137,7 +137,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
                   <select
                     value={selectedCabinId}
                     onChange={(e) => handleSelectCabinToEdit(e.target.value)}
-                    className="pl-3 pr-8 py-2 bg-[#121412] text-xs font-medium text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg outline-none appearance-none cursor-pointer min-w-[200px]"
+                    className="pl-3 pr-8 py-2 bg-[#121412] text-xs font-medium text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg outline-none appearance-none cursor-pointer min-w-[200px] h-11"
                   >
                     <option value="">-- Seleccione Cabaña --</option>
                     {cabanas.map((c) => (
@@ -154,9 +154,6 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
             </div>
           )}
         </div>
-        <p className="text-neutral-400 font-sans text-sm mt-1">
-          {isEditingState ? "Modifica la información y tarifas de una cabaña existente." : "Configuración e información técnica de la nueva unidad."}
-        </p>
       </div>
 
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-20">
@@ -429,20 +426,20 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
           </section>
 
           {/* Buttons desktop */}
-          <div className="space-y-3 pt-2">
+          <div className="grid grid-cols-2 gap-3 pt-2">
             <button
               id="submit-new-cabin"
               type="submit"
               className="w-full py-4 bg-[#4a634e] text-white font-bold rounded-xl shadow-lg hover:brightness-110 active:scale-95 transition-all text-xs font-sans uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer"
             >
               <Save className="w-4 h-4" />
-              Guardar Cabaña
+              Guardar
             </button>
             <button
               id="cancel-new-cabin"
               type="button"
               onClick={onBack}
-              className="w-full text-center py-2.5 text-neutral-400 hover:text-white font-sans text-xs font-bold uppercase transition-colors"
+              className="w-full py-4 bg-neutral-900 hover:bg-neutral-850 text-neutral-400 hover:text-white font-bold rounded-xl border border-neutral-850 transition-all text-xs font-sans uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer"
             >
               Cancelar
             </button>

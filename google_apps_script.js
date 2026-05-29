@@ -203,25 +203,48 @@ function doPost(e) {
         throw new Error("Petición inválida. Se requiere datos e 'id' para upsert.");
       }
       
-      let headers = TABLAS[sheetName];
+      // Leer las cabeceras reales de la primera fila del documento para mapeo dinámico
+      let sheetHeaders = sheet.getLastColumn() > 0 
+        ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0] 
+        : [];
+      
+      // Filtrar cabeceras vacías y usar fallback de TABLAS si el documento está en blanco
+      let headers = sheetHeaders.length > 0 && sheetHeaders[0] !== "" 
+        ? sheetHeaders.map(function(h) { return h.toString().trim(); }) 
+        : TABLAS[sheetName];
+        
       let rows = sheet.getDataRange().getValues();
       
-      // Mapear el objeto JSON a una fila en base al orden de las columnas/headers
-      let newRowValues = headers.map(header => {
+      // Mapear el objeto JSON a una fila en base al orden de las columnas/headers reales del sheet
+      let newRowValues = headers.map(function(header) {
+        // Soporte bidireccional y tolerante a fallos para 'id' / 'ide' y 'Nombre_complejo'
         let val = itemData[header];
         if (val === undefined || val === null) {
-          return "";
+          if (header === "ide") {
+            val = itemData["Nombre_complejo"] || itemData["id"];
+          } else if (header === "id") {
+            val = itemData["ide"] || itemData["id"];
+          } else if (header === "Nombre_complejo") {
+            val = itemData["ide"] || "";
+          } else {
+            val = "";
+          }
         }
         return val;
       });
       
       let targetRowIndex = -1;
       
-      // Buscar si existe un registro previo con el mismo ID
-      for (let i = 1; i < rows.length; i++) {
-        if (rows[i][0].toString() === itemData.id.toString()) {
-          targetRowIndex = i + 1;
-          break;
+      // Si es administración, siempre actualizamos la fila 2 (puesto que solo hay una configuración global)
+      if (sheetName === "administracion" && rows.length > 1) {
+        targetRowIndex = 2;
+      } else {
+        // Buscar si existe un registro previo con el mismo ID en la primera columna
+        for (let i = 1; i < rows.length; i++) {
+          if (rows[i][0] && rows[i][0].toString().trim() === itemData.id.toString().trim()) {
+            targetRowIndex = i + 1;
+            break;
+          }
         }
       }
       

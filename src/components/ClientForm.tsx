@@ -161,12 +161,9 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
           <ArrowLeft className="w-4 h-4" />
           Volver
         </button>
-        <span className="text-[10px] font-sans font-bold text-[#f6bb89] uppercase tracking-widest block mb-1">
-          Formulario de Registro
-        </span>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
-            {isEditingState ? "Editar Cliente" : "Nuevo Cliente"}
+          <h2 className="text-2xl font-headline font-bold text-white">
+            {isEditingState ? "Editar Cliente" : "Crear Cliente"}
           </h2>
           {clientes && clientes.length > 0 && (
             <div className="flex items-center gap-3">
@@ -178,14 +175,14 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                     handleSelectClientToEdit("");
                   }
                 }}
-                className={`flex items-center gap-2 px-4.5 py-2.5 text-xs font-sans font-extrabold rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg ${
+                title={isEditingState ? "Modo Crear Cliente" : "Editar Cliente"}
+                className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg shrink-0 border ${
                   isEditingState
-                    ? "bg-[#1b1e1b] text-neutral-400 hover:text-white border border-neutral-800 hover:bg-neutral-800"
-                    : "bg-[#4a634e] text-white hover:bg-[#5b7a60] border border-[#b2ceb4]/40 shadow-emerald-950/40"
+                    ? "bg-[#1e201e] text-[#b2ceb4] border-[#4a634e] ring-2 ring-[#b2ceb4]/10"
+                    : "bg-[#1b1e1b] text-[#f6bb89] border-neutral-800 hover:text-white hover:bg-neutral-800"
                 }`}
               >
-                <UserCheck className="w-4 h-4" />
-                {isEditingState ? "Modo Nuevo Cliente" : "Editar Cliente"}
+                <UserCheck className="w-4.5 h-4.5" />
               </button>
 
               {isEditingState && (
@@ -215,37 +212,105 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
       <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-24">
         {/* Main form body - 8 cols */}
         <div className="lg:col-span-8 space-y-6">
+          {/* Section 2: Datos Personales */}
+          <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
+            <div className="flex items-center gap-2 mb-2 text-[#f6bb89] pb-2 border-b border-neutral-850">
+              <Contact className="w-5 h-5" />
+              <h3 className="text-sm font-sans font-bold text-neutral-100">
+                Datos Personales y Contacto
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
+                  Nombre
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ingrese nombre"
+                  value={nombre}
+                  onChange={(e) => setNombre(e.target.value)}
+                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
+                  Apellido
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ingrese apellido"
+                  value={apellido}
+                  onChange={(e) => setApellido(e.target.value)}
+                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="nombre@ejemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none transition-all"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  required
+                  placeholder="+54 9 11 1234-5678"
+                  value={telefono}
+                  onChange={(e) => setTelefono(e.target.value)}
+                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none transition-all"
+                />
+              </div>
+            </div>
+          </section>
+
           {/* Section 1: Identidad */}
-          <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800/40 shadow-xl space-y-4">
+          <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
             <div className="flex items-center gap-2 mb-2 text-[#f6bb89] pb-2 border-b border-neutral-850">
               <UserCheck className="w-5 h-5" />
-              <h3 className="text-base font-sans font-bold text-neutral-100">
+              <h3 className="text-sm font-sans font-bold text-neutral-100">
                 Información de Identidad
               </h3>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
                   ID Cliente
                 </label>
                 <input
                   type="text"
                   value={isEditingState && selectedClientId ? selectedClientId : autoId}
                   readOnly
-                  className="w-full bg-[#121412] text-neutral-500 border border-neutral-800 rounded-lg p-2.5 text-xs font-semibold opacity-75 cursor-not-allowed"
+                  className="w-full bg-[#121412] text-neutral-500 border border-neutral-700 rounded-lg py-1.5 px-2.5 text-xs font-semibold opacity-75 cursor-not-allowed"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
                   Tipo de Documento
                 </label>
                 <select
                   value={tipoDocumento}
                   onChange={(e) => setTipoDocumento(e.target.value as any)}
                   disabled={isEditingState}
-                  className="w-full bg-[#121412] text-neutral-300 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full bg-[#121412] text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <option value="DNI">DNI</option>
                   <option value="Pasaporte">Pasaporte</option>
@@ -254,7 +319,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
               </div>
 
               <div className="col-span-full">
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
                   Número de Documento
                 </label>
                 <input
@@ -264,12 +329,12 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                   value={numeroDocumento}
                   onChange={(e) => setNumeroDocumento(e.target.value)}
                   disabled={isEditingState}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
                   Nacionalidad
                 </label>
                 <input
@@ -277,12 +342,12 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                   placeholder="Argentina"
                   value={nacionalidad}
                   onChange={(e) => setNacionalidad(e.target.value)}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none transition-all"
+                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none transition-all"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
                   Ciudad de Origen
                 </label>
                 <input
@@ -290,80 +355,12 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                   placeholder="Mendoza"
                   value={ciudadOrigen}
                   onChange={(e) => setCiudadOrigen(e.target.value)}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none transition-all"
-                />
-              </div>
-            </div>
-          </section>
-
-          {/* Section 2: Datos Personales */}
-          <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800/40 shadow-xl space-y-4">
-            <div className="flex items-center gap-2 mb-2 text-[#f6bb89] pb-2 border-b border-neutral-850">
-              <Contact className="w-5 h-5" />
-              <h3 className="text-base font-sans font-bold text-neutral-100">
-                Datos Personales y Contacto
-              </h3>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
-                  Nombre
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ingrese nombre"
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
-                  Apellido
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ingrese apellido"
-                  value={apellido}
-                  onChange={(e) => setApellido(e.target.value)}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  required
-                  placeholder="nombre@ejemplo.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none transition-all"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
-                  Teléfono
-                </label>
-                <input
-                  type="tel"
-                  required
-                  placeholder="+54 9 11 1234-5678"
-                  value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none transition-all"
+                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none transition-all"
                 />
               </div>
 
               <div className="col-span-full">
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1.5">
                   Fecha de Nacimiento
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -374,7 +371,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                       required
                       value={fechaNacimiento}
                       onChange={(e) => setFechaNacimiento(e.target.value)}
-                      className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none h-[38px]"
+                      className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none h-8"
                     />
                   </div>
 
@@ -383,7 +380,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                     <select
                       value={getBirthDay(fechaNacimiento)}
                       onChange={(e) => handleDropboxChange("day", e.target.value)}
-                      className="w-full bg-[#121412] text-neutral-300 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none h-[38px] text-center"
+                      className="w-full bg-[#121412] text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none h-8 text-center"
                       title="Seleccionar Día"
                     >
                       {days.map((d) => (
@@ -396,7 +393,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                     <select
                       value={getBirthMonth(fechaNacimiento)}
                       onChange={(e) => handleDropboxChange("month", e.target.value)}
-                      className="w-full bg-[#121412] text-neutral-300 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none h-[38px]"
+                      className="w-full bg-[#121412] text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none h-8"
                       title="Seleccionar Mes"
                     >
                       {months.map((m) => (
@@ -409,7 +406,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                     <select
                       value={getBirthYear(fechaNacimiento)}
                       onChange={(e) => handleDropboxChange("year", e.target.value)}
-                      className="w-full bg-[#121412] text-neutral-300 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none h-[38px] text-center"
+                      className="w-full bg-[#121412] text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none h-8 text-center"
                       title="Seleccionar Año"
                     >
                       {years.map((y) => (
@@ -425,23 +422,23 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
           </section>
 
           {/* Section 3: Preferencias y Estado */}
-          <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800/40 shadow-xl space-y-4">
+          <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
             <div className="flex items-center gap-2 mb-2 text-[#f6bb89] pb-2 border-b border-neutral-850">
               <HeartHandshake className="w-5 h-5" />
-              <h3 className="text-base font-sans font-bold text-neutral-100">
+              <h3 className="text-sm font-sans font-bold text-neutral-100">
                 Preferencias y Estado
               </h3>
             </div>
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
                   Estado del Cliente
                 </label>
                 <select
                   value={estado}
                   onChange={(e) => setEstado(e.target.value as any)}
-                  className="w-full bg-[#121412] text-neutral-300 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none"
+                  className="w-full bg-[#121412] text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none"
                 >
                   <option value="activo">Activo</option>
                   <option value="bloqueado">Bloqueado</option>
@@ -451,13 +448,13 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                  <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
                     Red Social Preferida
                   </label>
                   <select
                     value={redSocial}
                     onChange={(e) => setRedSocial(e.target.value as any)}
-                    className="w-full bg-[#121412] text-neutral-300 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none"
+                    className="w-full bg-[#121412] text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none"
                   >
                     <option value="WhatsApp">WhatsApp</option>
                     <option value="Instagram">Instagram</option>
@@ -467,7 +464,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                 </div>
 
                 <div>
-                  <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                  <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
                     Usuario / Link Red Social
                   </label>
                   <input
@@ -476,13 +473,13 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                     placeholder="@usuario"
                     value={redSocialUser}
                     onChange={(e) => setRedSocialUser(e.target.value)}
-                    className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none transition-all"
+                    className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none transition-all"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1">
+                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
                   Preferencias Especiales / Notas
                 </label>
                 <textarea
@@ -490,7 +487,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                   placeholder="Ej: Tercera edad, requiere silla de ruedas, alergias alimentarias..."
                   value={notas}
                   onChange={(e) => setNotas(e.target.value)}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-705 focus:border-[#b2ceb4] rounded-lg p-2.5 text-xs outline-none transition-all rename-none"
+                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none transition-all rename-none"
                 />
               </div>
             </div>
@@ -499,7 +496,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
 
         {/* Info panel + Save button - 4 cols */}
         <div className="lg:col-span-4 space-y-6">
-          <div className="bg-[#1b1e1b] rounded-xl p-5 border border-neutral-850 shadow-md flex items-center justify-between">
+          <div className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl flex items-center justify-between">
             <div>
               <p className="text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide">
                 Fecha de Registro
@@ -515,19 +512,19 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
             <CalendarDays className="w-8 h-8 text-[#f6bb89]/80" />
           </div>
 
-          <div className="space-y-3">
+          <div className="grid grid-cols-2 gap-3">
             <button
               id="submit-new-client"
               type="submit"
               className="w-full py-4 bg-[#4a634e] text-white font-bold rounded-xl shadow-lg hover:brightness-110 active:scale-95 transition-all text-xs font-sans uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer"
             >
               <Save className="w-4 h-4" />
-              {isEditingState ? "Guardar Cambios" : "Guardar Cliente"}
+              {isEditingState ? "Guardar" : "Guardar"}
             </button>
             <button
               type="button"
               onClick={onBack}
-              className="w-full text-center py-2.5 border border-neutral-800 hover:bg-neutral-850 font-sans text-xs font-bold text-neutral-400 hover:text-white rounded-lg transition-all"
+              className="w-full py-4 bg-neutral-900 hover:bg-neutral-850 text-neutral-400 hover:text-white font-bold rounded-xl border border-neutral-850 transition-all text-xs font-sans uppercase tracking-widest flex items-center justify-center gap-2 cursor-pointer"
             >
               Cancelar
             </button>

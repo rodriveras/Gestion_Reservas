@@ -115,8 +115,8 @@ export default function App() {
         Nombre_complejo: config.Nombre_complejo || "Gestion Cabañas",
         Usuario: config.Usuario || "admin@entrenieves.com",
         Contrasena: config.Contrasena || "nieves2026",
-        Telefono: config.Telefono || "+5491112345678",
-        Whatsapp: config.Whatsapp || "5491112345678"
+        Telefono: String(config.Telefono || "+5491112345678"),
+        Whatsapp: String(config.Whatsapp || "5491112345678")
       }];
     }
     
@@ -229,7 +229,15 @@ export default function App() {
         setReservas(cloudData.reservas);
         setContrataciones(cloudData.contrataciones);
         if (cloudData.administracion && cloudData.administracion.length > 0) {
-          setAdministracion(cloudData.administracion);
+          const config = cloudData.administracion[0] as any;
+          setAdministracion([{
+            id: config.id || "admin-config",
+            Nombre_complejo: config.Nombre_complejo || config.ide || "CABAÑAS ENTRE NIEVES",
+            Usuario: config.Usuario || "admin@entrenieves.com",
+            Contrasena: config.Contrasena || "nieves2026",
+            Telefono: String(config.Telefono || "+5491112345678"),
+            Whatsapp: String(config.Whatsapp || "5491112345678")
+          }]);
         }
         setSyncStatus("success");
         setSheetsActive(true);
@@ -658,66 +666,7 @@ export default function App() {
         )}
       </main>
 
-      {/* Floating Global Settings Popover Dropdown */}
-      {isConfigDropdownOpen && (["calendar", "dashboard", "admin"].includes(currentScreen) || (currentScreen === "guest" && isAuthenticated)) && (
-        <>
-          {/* Invisible click-away backdrop */}
-          <div
-            onClick={() => setIsConfigDropdownOpen(false)}
-            className="fixed inset-0 z-40 bg-transparent"
-          />
-          
-          <div className="fixed bottom-18 right-6 w-56 bg-[#161916]/95 backdrop-blur-md border border-neutral-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-bottom-3 duration-200">
-            <div className="px-3.5 py-2 border-b border-neutral-900 mb-1">
-              <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase tracking-widest block">
-                Configuraciones
-              </span>
-            </div>
-            
-            {/* Nueva Cabaña */}
-            <button
-              onClick={() => {
-                setIsConfigDropdownOpen(false);
-                navigateTo("new-cabin");
-              }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#252925] text-neutral-300 hover:text-white transition-all text-xs font-sans font-semibold cursor-pointer text-left"
-            >
-              <div className="w-6 h-6 rounded-lg bg-[#4a634e]/20 text-[#b2ceb4] flex items-center justify-center">
-                <Home className="w-3.5 h-3.5" />
-              </div>
-              Nueva Cabaña
-            </button>
-            
-            {/* Nuevo Servicio */}
-            <button
-              onClick={() => {
-                setIsConfigDropdownOpen(false);
-                navigateTo("new-service");
-              }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#252925] text-neutral-300 hover:text-white transition-all text-xs font-sans font-semibold cursor-pointer text-left"
-            >
-              <div className="w-6 h-6 rounded-lg bg-[#4a634e]/20 text-[#b2ceb4] flex items-center justify-center">
-                <Settings className="w-3.5 h-3.5" />
-              </div>
-              Nuevo Servicio
-            </button>
-            
-            {/* Configurar Complejo */}
-            <button
-              onClick={() => {
-                setIsConfigDropdownOpen(false);
-                setIsConfigOpen(true);
-              }}
-              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#252925] text-neutral-300 hover:text-white transition-all text-xs font-sans font-semibold cursor-pointer text-left"
-            >
-              <div className="w-6 h-6 rounded-lg bg-[#4a634e]/20 text-[#f6bb89] flex items-center justify-center">
-                <Trees className="w-3.5 h-3.5" />
-              </div>
-              Configurar Complejo
-            </button>
-          </div>
-        </>
-      )}
+
 
       {/* Persistent Bottom Navigation Bar for Admin Primary Screens */}
       {(["calendar", "dashboard", "admin"].includes(currentScreen) || (currentScreen === "guest" && isAuthenticated)) ? (
@@ -753,7 +702,81 @@ export default function App() {
             <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">HUÉSPED</span>
           </button>
 
-          {/* Tab 3: Cerrar Sesión */}
+          {/* Tab 3: Configuración (Toggles popover) */}
+          <div className="relative flex flex-col items-center justify-center h-full">
+            <button
+              onClick={() => setIsConfigDropdownOpen(!isConfigDropdownOpen)}
+              className={`flex flex-col items-center justify-center gap-1 w-16 h-full transition-all cursor-pointer ${
+                isConfigDropdownOpen ? "text-[#f6bb89] scale-105 font-bold" : "text-neutral-500 hover:text-neutral-300"
+              }`}
+              title="Configuración global de recursos"
+            >
+              <Settings className={`w-5 h-5 transition-transform duration-300 ${isConfigDropdownOpen ? "rotate-45" : ""}`} />
+              <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">AJUSTES</span>
+            </button>
+
+            {isConfigDropdownOpen && (
+              <>
+                {/* Invisible click-away backdrop */}
+                <div
+                  onClick={() => setIsConfigDropdownOpen(false)}
+                  className="fixed inset-0 z-40 bg-transparent cursor-default"
+                />
+                
+                <div className="absolute bottom-18 left-1/2 -translate-x-1/2 w-56 bg-[#161916]/95 backdrop-blur-md border border-neutral-800 rounded-2xl shadow-2xl p-2 z-50 animate-in fade-in slide-in-from-bottom-3 duration-200">
+                  <div className="px-3.5 py-2 border-b border-neutral-900 mb-1">
+                    <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase tracking-widest block text-center">
+                      Configuraciones
+                    </span>
+                  </div>
+                  
+                  {/* Nueva Cabaña */}
+                  <button
+                    onClick={() => {
+                      setIsConfigDropdownOpen(false);
+                      navigateTo("new-cabin");
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#252925] text-neutral-300 hover:text-white transition-all text-xs font-sans font-semibold cursor-pointer text-left"
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-[#4a634e]/20 text-[#b2ceb4] flex items-center justify-center">
+                      <Home className="w-3.5 h-3.5" />
+                    </div>
+                    Nueva Cabaña
+                  </button>
+                  
+                  {/* Nuevo Servicio */}
+                  <button
+                    onClick={() => {
+                      setIsConfigDropdownOpen(false);
+                      navigateTo("new-service");
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#252925] text-neutral-300 hover:text-white transition-all text-xs font-sans font-semibold cursor-pointer text-left"
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-[#4a634e]/20 text-[#b2ceb4] flex items-center justify-center">
+                      <Settings className="w-3.5 h-3.5" />
+                    </div>
+                    Nuevo Servicio
+                  </button>
+                  
+                  {/* Configurar Complejo */}
+                  <button
+                    onClick={() => {
+                      setIsConfigDropdownOpen(false);
+                      setIsConfigOpen(true);
+                    }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#252925] text-neutral-300 hover:text-white transition-all text-xs font-sans font-semibold cursor-pointer text-left"
+                  >
+                    <div className="w-6 h-6 rounded-lg bg-[#4a634e]/20 text-[#f6bb89] flex items-center justify-center">
+                      <Trees className="w-3.5 h-3.5" />
+                    </div>
+                    Configurar Complejo
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Tab 4: Cerrar Sesión */}
           <button
             onClick={() => {
               setIsConfigDropdownOpen(false);
@@ -766,18 +789,6 @@ export default function App() {
           >
             <LogOut className="w-5 h-5" />
             <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">SALIR</span>
-          </button>
-
-          {/* Tab 4: Configuración (Toggles popover) */}
-          <button
-            onClick={() => setIsConfigDropdownOpen(!isConfigDropdownOpen)}
-            className={`flex flex-col items-center justify-center gap-1 w-16 h-full transition-all cursor-pointer ${
-              isConfigDropdownOpen ? "text-[#f6bb89] scale-105 font-bold" : "text-neutral-500 hover:text-neutral-300"
-            }`}
-            title="Configuración global de recursos"
-          >
-            <Settings className={`w-5 h-5 transition-transform duration-300 ${isConfigDropdownOpen ? "rotate-45" : ""}`} />
-            <span className="text-[8px] font-sans uppercase tracking-wider font-extrabold">AJUSTES</span>
           </button>
 
         </div>

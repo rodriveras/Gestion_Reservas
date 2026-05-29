@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { ArrowLeft, ArrowRight, ArrowLeftRight, Users, Moon, Sparkles, ShieldAlert } from "lucide-react";
+import { ArrowLeft, ArrowRight, ArrowLeftRight, Users, Moon, Sparkles, ShieldAlert, Layers, Filter } from "lucide-react";
 import { Cabana, Reserva, Cliente, Servicio, ContratacionServicio } from "../types";
 
 // Helper to parse dates in local timezone to avoid UTC shifting bugs
@@ -60,6 +60,22 @@ export default function CalendarView({
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
   ];
+
+  const generateMonthOptions = () => {
+    const options = [];
+    const baseDate = new Date();
+    // Rango dinámico de 12 meses antes hasta 24 meses después
+    const start = new Date(baseDate.getFullYear(), baseDate.getMonth() - 12, 1);
+    for (let i = 0; i < 37; i++) {
+      const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
+      options.push(d);
+    }
+    return options;
+  };
+
+  const formatMonthOptionLabel = (date: Date) => {
+    return `${monthNames[date.getMonth()]} ${date.getFullYear()}`;
+  };
 
   const currentMonthName = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
 
@@ -325,51 +341,50 @@ export default function CalendarView({
             <ArrowLeft className="w-4 h-4" />
             Volver
           </button>
-          <h2 className="text-3xl md:text-4xl font-headline font-bold text-[#b2ceb4]">
+          <h2 className="text-2xl md:text-3xl font-headline font-bold text-[#b2ceb4]">
             Disponibilidad y reservas
           </h2>
-          <p className="text-neutral-400 font-sans text-sm mt-1">
-            Gestiona el calendario de ocupación y próximas estancias.
-          </p>
         </div>
 
         {/* Toggle & Filter Container */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto pb-1">
+        <div className="flex flex-row items-center gap-3 pb-1 shrink-0">
           {/* Planificador General Button */}
           <button
             onClick={() => setSelectedCabanaId("all")}
-            className={`px-5 py-3 text-sm font-sans font-bold rounded-xl transition-all border cursor-pointer ${
+            title="Planificador general"
+            className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all border cursor-pointer shrink-0 ${
               selectedCabanaId === "all"
                 ? "bg-[#4a634e] text-white border-[#4a634e] shadow-lg shadow-emerald-950/20"
                 : "bg-[#1e201e] text-neutral-400 border-neutral-800 hover:text-white hover:border-neutral-700"
             }`}
           >
-            Planificador general
+            <Layers className="w-4.5 h-4.5" />
           </button>
 
           {/* Cabin Dropdown */}
-          <div className="relative w-full sm:w-56">
+          <div className="relative">
             <select
               value={selectedCabanaId === "all" ? "" : selectedCabanaId}
               onChange={(e) => {
                 if (e.target.value) setSelectedCabanaId(e.target.value);
               }}
-              className={`w-full bg-[#1e201e] border rounded-xl px-4 py-3 text-sm font-sans appearance-none outline-none transition-all cursor-pointer ${
+              className={`w-10 h-10 bg-[#1e201e] border rounded-xl appearance-none outline-none transition-all cursor-pointer text-transparent select-none ${
                 selectedCabanaId !== "all"
-                  ? "border-[#4a634e] text-[#b2ceb4] ring-2 ring-[#b2ceb4]/20"
-                  : "border-neutral-800 text-neutral-400 hover:border-neutral-700 hover:text-neutral-300"
+                  ? "border-[#4a634e] ring-2 ring-[#b2ceb4]/10"
+                  : "border-neutral-800 hover:border-neutral-700"
               }`}
+              title={selectedCabanaId === "all" ? "Filtrar por cabaña" : `Filtrado por: ${safeCabanas.find(c => c.id === selectedCabanaId)?.nombre}`}
             >
-              <option value="" disabled hidden>Filtrar por cabaña</option>
+              <option value="" disabled hidden></option>
               {safeCabanas.map((c) => (
-                <option key={c.id} value={c.id}>
+                <option key={c.id} value={c.id} className="bg-[#1b1e1b] text-neutral-200 text-xs">
                   {c.nombre}
                 </option>
               ))}
             </select>
-            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400">
-              expand_more
-            </span>
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <Filter className={`w-4.5 h-4.5 ${selectedCabanaId !== "all" ? "text-[#b2ceb4]" : "text-neutral-400"}`} />
+            </div>
           </div>
         </div>
       </div>
@@ -383,22 +398,27 @@ export default function CalendarView({
                 ? "Planificador general" 
                 : (safeCabanas.find((c) => c.id === selectedCabanaId)?.nombre || "Detalle de Unidad")}
             </h3>
-            <div className="flex items-center gap-3 bg-[#121412]/60 border border-neutral-800/50 px-3 py-1.5 rounded-xl">
-              <button
-                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}
-                className="p-1.5 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-lg transition-all cursor-pointer"
+            <div className="relative">
+              <select
+                value={`${currentDate.getFullYear()}-${currentDate.getMonth()}`}
+                onChange={(e) => {
+                  const [year, month] = e.target.value.split("-").map(Number);
+                  setCurrentDate(new Date(year, month, 1));
+                }}
+                className="bg-[#121412]/60 text-xs font-sans font-bold text-[#b2ceb4] border border-neutral-800/40 pl-3 pr-8 py-1 rounded-lg outline-none appearance-none cursor-pointer hover:border-neutral-700 hover:text-white transition-all h-8 min-w-[140px]"
               >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-              <span className="text-sm font-sans font-bold text-[#b2ceb4] min-w-[95px] text-center tracking-wide">
-                {currentMonthName}
+                {generateMonthOptions().map((opt) => {
+                  const val = `${opt.getFullYear()}-${opt.getMonth()}`;
+                  return (
+                    <option key={val} value={val} className="bg-[#1b1e1b] text-neutral-200">
+                      {formatMonthOptionLabel(opt)}
+                    </option>
+                  );
+                })}
+              </select>
+              <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400 text-xs">
+                expand_more
               </span>
-              <button
-                onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}
-                className="p-1.5 hover:bg-neutral-800 text-neutral-400 hover:text-white rounded-lg transition-all cursor-pointer"
-              >
-                <ArrowRight className="w-4 h-4" />
-              </button>
             </div>
           </div>
 
@@ -409,7 +429,7 @@ export default function CalendarView({
               <div className="min-w-[850px] space-y-4">
                 {/* Header Row: Days 1 to 31 */}
                 <div className="flex items-center gap-1 border-b border-neutral-850 pb-2">
-                  <div className="w-36 shrink-0 text-left text-[10px] font-sans font-bold text-neutral-500 uppercase tracking-widest pl-2">
+                  <div className="w-24 shrink-0 text-left text-[10px] font-sans font-bold text-neutral-500 uppercase tracking-widest pl-2">
                     Unidad
                   </div>
                   <div className="flex-1 flex justify-between gap-1">
@@ -435,7 +455,7 @@ export default function CalendarView({
                   {safeCabanas.map((cab) => (
                     <div key={cab.id} className="flex items-center gap-1 bg-[#121412]/40 rounded-xl p-2 border border-neutral-900/60 hover:border-neutral-800 transition-all">
                       {/* Left: Cabin Name Column */}
-                      <div className="w-36 shrink-0 text-left flex flex-col justify-center pl-1">
+                      <div className="w-24 shrink-0 text-left flex flex-col justify-center pl-1">
                         <span className="text-xs font-headline font-bold text-neutral-200 truncate">
                           {cab.nombre}
                         </span>
@@ -750,43 +770,47 @@ export default function CalendarView({
                       setPaymentMethod("Transferencia");
                     }
                   }}
-                  className={`bg-[#121412] p-4 rounded-xl border transition-all cursor-pointer group space-y-2.5 ${
+                  className={`bg-[#121412] p-4 rounded-xl border transition-all cursor-pointer group space-y-3 ${
                     selectedReservaId === arr.id
                       ? "border-[#b2ceb4] ring-2 ring-[#b2ceb4]/10 shadow-lg shadow-[#b2ceb4]/5"
                       : "border-neutral-800 hover:border-[#b2ceb4]/40"
                   }`}
                 >
-                  <div className="flex justify-between items-start">
-                    <h4 className="text-xs font-sans font-bold text-neutral-100 group-hover:text-[#b2ceb4] transition-colors truncate max-w-[140px]">
+                  {/* Guest Name & Cabin Badge */}
+                  <div className="flex justify-between items-center gap-2">
+                    <h4 className="text-sm font-sans font-extrabold text-neutral-100 group-hover:text-[#b2ceb4] transition-colors truncate">
                       {arr.guestName}
                     </h4>
-                    <span className="text-xs font-sans font-bold text-[#b2ceb4]">
-                      {formatCurrency(arr.price)}
+                    <span className="px-2.5 py-0.5 rounded-full text-[9px] font-sans font-black bg-[#b2ceb4]/10 text-[#b2ceb4] border border-[#b2ceb4]/20 uppercase tracking-wider shrink-0">
+                      {arr.cabinName}
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 text-[11px] text-[#f6bb89]">
-                    <span className="font-semibold">{arr.cabinName}</span>
-                    <span className="text-neutral-600">•</span>
-                    <span className="text-neutral-400">{arr.dateText}</span>
-                  </div>
-                  <div className="flex items-center gap-4 text-[10px] text-neutral-500">
-                    <div className="flex items-center gap-1">
-                      <Users className="w-3.5 h-3.5 text-neutral-600" />
+
+                  {/* Dates & Duration Details */}
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] text-neutral-400 bg-[#1b1e1b]/50 p-2 rounded-lg border border-neutral-900/40">
+                    <div className="flex items-center gap-1 text-[#f6bb89] font-bold">
+                      <span className="material-symbols-outlined text-[12px]">calendar_today</span>
+                      <span>{arr.dateText}</span>
+                    </div>
+                    <div className="text-neutral-600 hidden xs:inline">•</div>
+                    <div className="flex items-center gap-1 font-semibold">
+                      <Users className="w-3.5 h-3.5 text-neutral-500" />
                       <span>{arr.passengers} Pasajeros</span>
                     </div>
-                    <div className="flex items-center gap-1">
-                      <Moon className="w-3.5 h-3.5 text-neutral-600" />
+                    <div className="text-neutral-600 hidden xs:inline">•</div>
+                    <div className="flex items-center gap-1 font-semibold">
+                      <Moon className="w-3.5 h-3.5 text-neutral-500" />
                       <span>{arr.nights} Noches</span>
                     </div>
                   </div>
 
                   {/* Contracted services inline list */}
                   {arr.services && arr.services.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-neutral-900/40 space-y-1">
+                    <div className="space-y-1.5">
                       <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase tracking-wider block">Servicios contratados:</span>
                       <div className="flex flex-wrap gap-1">
                         {arr.services.map((srv: any) => (
-                          <span key={srv.id} className="bg-[#4a634e]/10 text-[#b2ceb4] border border-[#4a634e]/30 px-1.5 py-0.5 rounded text-[9px] font-semibold">
+                          <span key={srv.id} className="bg-[#4a634e]/10 text-[#b2ceb4] border border-[#4a634e]/30 px-2 py-0.5 rounded-full text-[9px] font-semibold">
                             {srv.nombre} (x{srv.cantidad})
                           </span>
                         ))}
@@ -795,25 +819,18 @@ export default function CalendarView({
                   )}
 
                   {/* Financial Breakdown / Balance */}
-                  <div className="mt-2.5 pt-2.5 border-t border-neutral-900/60 grid grid-cols-2 gap-1.5 text-[10px] bg-[#121412]/50 p-2 rounded-lg border border-neutral-900/30">
-                    <div className="flex justify-between col-span-2 text-[9px] text-neutral-500 font-bold uppercase tracking-wider border-b border-neutral-900/40 pb-0.5 mb-0.5">
-                      <span>Detalle de Cuenta</span>
+                  <div className="pt-2 border-t border-neutral-900/60 space-y-1.5 text-[10px] sm:text-[11px]">
+                    <div className="flex justify-between items-center text-neutral-400">
+                      <span className="font-medium">Total Reserva (Estadía + Serv.):</span>
+                      <span className="font-sans font-bold text-neutral-100">{formatCurrency(arr.price + arr.servicesTotal)}</span>
                     </div>
-                    <div className="flex flex-col">
-                      <span className="text-[8px] text-neutral-500 uppercase font-sans font-semibold">Total Cabaña</span>
-                      <span className="text-xs font-headline font-semibold text-neutral-300">{formatCurrency(arr.price)}</span>
+                    <div className="flex justify-between items-center text-neutral-400">
+                      <span className="font-medium">Monto Abonado (Anticipo):</span>
+                      <span className="font-sans font-bold text-neutral-300">{formatCurrency(arr.deposit)}</span>
                     </div>
-                    <div className="flex flex-col text-right">
-                      <span className="text-[8px] text-neutral-500 uppercase font-sans font-semibold">Servicios</span>
-                      <span className="text-xs font-headline font-semibold text-[#b2ceb4]">{formatCurrency(arr.servicesTotal)}</span>
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[8px] text-neutral-500 uppercase font-sans font-semibold">Anticipo</span>
-                      <span className="text-xs font-headline font-semibold text-neutral-400">{formatCurrency(arr.deposit)}</span>
-                    </div>
-                    <div className="flex flex-col text-right">
-                      <span className="text-[8px] text-[#f6bb89] uppercase font-sans font-bold">Saldo x Pagar</span>
-                      <span className="text-xs font-headline font-bold text-[#f6bb89]">{formatCurrency(arr.balance)}</span>
+                    <div className="flex justify-between items-center bg-[#171a17]/40 p-2 rounded-lg border border-neutral-900/50 mt-1">
+                      <span className="font-bold text-[#f6bb89] uppercase text-[9px] tracking-wider">Saldo por pagar:</span>
+                      <span className="text-xs sm:text-sm font-headline font-black text-[#f6bb89]">{formatCurrency(arr.balance)}</span>
                     </div>
                   </div>
 

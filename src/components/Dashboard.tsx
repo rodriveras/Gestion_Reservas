@@ -33,7 +33,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
   const [selectedCabinSegment, setSelectedCabinSegment] = useState<string | null>(null);
   const [selectedChannelSegment, setSelectedChannelSegment] = useState<string | null>(null);
   const [selectedYear, setSelectedYear] = useState<number | "Todos">(2026); // Default to 2026 matching mockup
-  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number>(5); // June by default
+  const [selectedMonthIndex, setSelectedMonthIndex] = useState<number | null>(null); // None selected by default
 
   // Filter bookings and service contracts to only those belonging to the selected year,
   // and exclude cancelled reservations.
@@ -259,31 +259,33 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
             <ArrowLeft className="w-4 h-4" />
             Volver
           </button>
-          <h2 className="text-3xl md:text-4xl font-headline font-bold text-[#b2ceb4]">
+          <h2 className="text-2xl md:text-3xl font-headline font-bold text-white">
             Análisis Estratégico
           </h2>
-          <p className="text-neutral-400 font-sans text-sm mt-1">
-            Resumen ejecutivo del rendimiento real y proyectado de las cabañas.
-          </p>
         </div>
-        <div className="flex items-center gap-3 bg-[#1b1e1b] border border-neutral-800/80 p-1.5 rounded-xl self-start md:self-auto shadow-md">
-          <span className="text-[10px] font-sans font-extrabold text-[#f6bb89] uppercase tracking-widest pl-2">
-            FILTRO GENERAL AÑO:
-          </span>
-          <div className="flex bg-[#121412] p-1 rounded-lg border border-neutral-900 shadow-inner">
-            {[2024, 2025, 2026, "Todos"].map((yr) => (
-              <button
-                key={yr}
-                onClick={() => setSelectedYear(yr as any)}
-                className={`px-3.5 py-1.5 text-xs font-sans font-bold rounded-md transition-all duration-200 cursor-pointer ${
-                  selectedYear === yr
-                    ? "bg-[#4a634e] text-white shadow-md font-extrabold scale-105"
-                    : "text-neutral-400 hover:text-white hover:bg-neutral-900/30"
-                }`}
-              >
-                {yr}
-              </button>
-            ))}
+        <div className="flex items-center gap-2 bg-[#1b1e1b] border border-neutral-800/80 p-1 rounded-lg self-start md:self-auto shadow-md">
+          <CalendarDays className="w-4 h-4 text-[#f6bb89] ml-1.5 shrink-0" />
+          <div className="relative">
+            <select
+              value={selectedYear}
+              onChange={(e) => {
+                const val = e.target.value;
+                setSelectedYear(val === "Todos" ? "Todos" : parseInt(val, 10));
+              }}
+              className="bg-[#121412]/60 text-xs font-sans font-bold text-[#b2ceb4] border border-neutral-800/40 pl-2.5 pr-7 py-0.5 rounded-md outline-none appearance-none cursor-pointer hover:border-neutral-700 hover:text-white transition-all h-7 min-w-[80px] shadow-inner animate-none"
+              style={{
+                backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23b2ceb4' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                backgroundPosition: `right 0.4rem center`,
+                backgroundSize: `1.1em 1.1em`,
+                backgroundRepeat: `no-repeat`
+              }}
+            >
+              {[2024, 2025, 2026, "Todos"].map((yr) => (
+                <option key={yr} value={yr} className="bg-[#1b1e1b] text-neutral-200">
+                  {yr === "Todos" ? "Todos" : yr}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </header>
@@ -740,10 +742,8 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
               Ingresos Mensuales Totales
             </h3>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-              AÑO:
-            </span>
+          <div className="flex items-center gap-2 bg-[#1b1e1b] border border-neutral-800/80 p-1 rounded-lg shadow-md">
+            <CalendarDays className="w-4 h-4 text-[#f6bb89] ml-1.5 shrink-0" />
             <div className="relative">
               <select
                 value={selectedYear}
@@ -751,17 +751,17 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                   const val = e.target.value;
                   setSelectedYear(val === "Todos" ? "Todos" : parseInt(val, 10));
                 }}
-                className="bg-[#121412] text-neutral-200 border border-neutral-800 rounded-lg py-1.5 px-3 pr-8 text-xs font-semibold outline-none focus:border-[#d29b6c] cursor-pointer appearance-none shadow-inner"
+                className="bg-[#121412]/60 text-xs font-sans font-bold text-[#b2ceb4] border border-neutral-800/40 pl-2.5 pr-7 py-0.5 rounded-md outline-none appearance-none cursor-pointer hover:border-neutral-700 hover:text-white transition-all h-7 min-w-[80px] shadow-inner animate-none"
                 style={{
-                  backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23ffffff' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
-                  backgroundPosition: `right 0.5rem center`,
-                  backgroundSize: `1.25em 1.25em`,
+                  backgroundImage: `url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3E%3Cpath stroke='%23b2ceb4' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3E%3C/svg%3E")`,
+                  backgroundPosition: `right 0.4rem center`,
+                  backgroundSize: `1.1em 1.1em`,
                   backgroundRepeat: `no-repeat`
                 }}
               >
                 {[2024, 2025, 2026, "Todos"].map((yr) => (
-                  <option key={yr} value={yr} className="bg-[#121412]">
-                    {yr}
+                  <option key={yr} value={yr} className="bg-[#1b1e1b] text-neutral-200">
+                    {yr === "Todos" ? "Todos" : yr}
                   </option>
                 ))}
               </select>
@@ -792,7 +792,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                   return (
                     <div
                       key={d.name}
-                      onClick={() => setSelectedMonthIndex(d.monthIndex)}
+                      onClick={() => setSelectedMonthIndex((prev) => (prev === d.monthIndex ? null : d.monthIndex))}
                       className="flex flex-col items-center flex-1 max-w-[80px] gap-3 h-full justify-end group cursor-pointer"
                     >
                       <div className="w-full relative flex flex-col justify-end h-full">
@@ -861,37 +861,39 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
               </div>
 
               {/* Detail Footer */}
-              <div className="bg-[#121412]/80 border border-neutral-900 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
-                <div className="flex items-center gap-4">
-                  {/* Dot with matching color */}
-                  <span
-                    className="w-3.5 h-3.5 rounded-full shadow-[0_0_12px_currentColor] animate-pulse border-2 border-white/20"
-                    style={{
-                      backgroundColor: monthColors[monthNames[selectedMonthIndex]],
-                      color: monthColors[monthNames[selectedMonthIndex]]
-                    }}
-                  />
-                  <div className="text-left">
-                    <h4 className="text-lg font-headline font-bold text-white leading-tight">
-                      {monthFullNames[selectedMonthIndex]} {selectedYear === "Todos" ? "(Histórico)" : selectedYear}
-                    </h4>
-                    <p className="text-xs text-neutral-400 font-sans mt-1">
-                      Al seleccionar cada barra se detallan sus proporciones sobre el total anual de <span className="font-semibold text-neutral-200">$${formatNumber(totalAnnual)}</span>.
-                    </p>
+              {selectedMonthIndex !== null && (
+                <div className="bg-[#121412]/80 border border-neutral-900 rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+                  <div className="flex items-center gap-4">
+                    {/* Dot with matching color */}
+                    <span
+                      className="w-3.5 h-3.5 rounded-full shadow-[0_0_12px_currentColor] animate-pulse border-2 border-white/20"
+                      style={{
+                        backgroundColor: monthColors[monthNames[selectedMonthIndex]],
+                        color: monthColors[monthNames[selectedMonthIndex]]
+                      }}
+                    />
+                    <div className="text-left">
+                      <h4 className="text-lg font-headline font-bold text-white leading-tight">
+                        {monthFullNames[selectedMonthIndex]} {selectedYear === "Todos" ? "(Histórico)" : selectedYear}
+                      </h4>
+                      <p className="text-xs text-neutral-400 font-sans mt-1">
+                        Proporción sobre el total de <span className="font-semibold text-neutral-200">${formatNumber(totalAnnual)}</span>.
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                <div className="flex flex-col items-end text-right">
-                  <span className="text-[10px] font-sans font-extrabold text-neutral-400 tracking-wider uppercase">
-                    PARTICIPACIÓN: {totalAnnual > 0 ? Math.round(((monthlyValues[selectedMonthIndex] || 0) / totalAnnual) * 100) : 0}%
-                  </span>
-                  <div className="text-2xl font-headline font-black text-white mt-1 tracking-tight">
-                    <span className="text-[#10b981] font-bold mr-1">$</span>
-                    <span className="text-white font-extrabold">{formatNumber(monthlyValues[selectedMonthIndex] || 0)}</span>
-                    <span className="text-[#10b981] text-xs font-bold ml-1.5 uppercase tracking-wider">CLP</span>
+                  <div className="flex flex-col items-end text-right">
+                    <span className="text-[10px] font-sans font-extrabold text-neutral-400 tracking-wider uppercase">
+                      PARTICIPACIÓN: {totalAnnual > 0 ? Math.round(((monthlyValues[selectedMonthIndex] || 0) / totalAnnual) * 100) : 0}%
+                    </span>
+                    <div className="text-2xl font-headline font-black text-white mt-1 tracking-tight">
+                      <span className="text-[#10b981] font-bold mr-1">$</span>
+                      <span className="text-white font-extrabold">{formatNumber(monthlyValues[selectedMonthIndex] || 0)}</span>
+                      <span className="text-[#10b981] text-xs font-bold ml-1.5 uppercase tracking-wider">CLP</span>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </div>
