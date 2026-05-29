@@ -162,7 +162,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
           Volver
         </button>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h2 className="text-2xl font-headline font-bold text-white">
+          <h2 className="text-sm font-sans font-bold text-neutral-100">
             {isEditingState ? "Editar Cliente" : "Crear Cliente"}
           </h2>
           {clientes && clientes.length > 0 && (

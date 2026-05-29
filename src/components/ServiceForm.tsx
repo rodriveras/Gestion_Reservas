@@ -84,7 +84,7 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
             <ArrowLeft className="w-4 h-4" />
             Volver
           </button>
-          <h2 className="text-2xl font-headline font-bold text-white">
+          <h2 className="text-sm font-sans font-bold text-neutral-100">
             {isEditingState ? "Editar Servicio" : "Nuevo Servicio"}
           </h2>
         </div>

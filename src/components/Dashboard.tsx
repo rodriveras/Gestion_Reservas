@@ -259,7 +259,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
             <ArrowLeft className="w-4 h-4" />
             Volver
           </button>
-          <h2 className="text-2xl md:text-3xl font-headline font-bold text-white">
+          <h2 className="text-sm font-sans font-bold text-neutral-100">
             Análisis Estratégico
           </h2>
         </div>
@@ -300,7 +300,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
             </span>
             <DollarSign className="w-4 h-4 text-[#f6bb89]" />
           </div>
-          <div className="text-xl md:text-2xl font-headline font-semibold text-[#e2e3df]">
+          <div className="text-base md:text-lg font-sans font-bold text-[#e2e3df]">
             {formatCurrency(ingresosProyectados)}
           </div>
         </div>
@@ -313,7 +313,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
             </span>
             <span className="text-xs font-sans bg-amber-950/40 text-[#f9ba82] px-1.5 py-0.5 rounded">Cobros</span>
           </div>
-          <div className="text-xl md:text-2xl font-headline font-semibold text-[#e2e3df]">
+          <div className="text-base md:text-lg font-sans font-bold text-[#e2e3df]">
             {formatCurrency(saldoPorCobrar)}
           </div>
         </div>
@@ -326,7 +326,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
             </span>
             <Moon className="w-4 h-4 text-[#b2ceb4]" />
           </div>
-          <div className="text-xl md:text-2xl font-headline font-semibold text-[#e2e3df]">
+          <div className="text-base md:text-lg font-sans font-bold text-[#e2e3df]">
             {estadiaPromedio} noches
           </div>
         </div>
@@ -339,7 +339,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
             </span>
             <CalendarDays className="w-4 h-4 text-[#e6ad7c]" />
           </div>
-          <div className="text-xl md:text-2xl font-headline font-semibold text-[#e2e3df]">
+          <div className="text-base md:text-lg font-sans font-bold text-[#e2e3df]">
             {reservasTotalesCount} reservas
           </div>
         </div>
@@ -351,7 +351,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
         <div className="bg-[#1b1e1b] rounded-xl border border-neutral-800/40 border-t-2 border-[#D29B6C] p-6 shadow-xl space-y-6">
           <div className="flex items-center gap-2 pb-2 border-b border-neutral-900">
             <PieChart className="w-5 h-5 text-emerald-400" />
-            <h3 className="text-lg font-headline font-semibold text-neutral-200">
+            <h3 className="text-sm font-sans font-bold text-neutral-100">
               Reservas Activas por cabañas
             </h3>
           </div>
@@ -469,7 +469,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                 })}
               </svg>
               <div className="absolute text-center flex flex-col items-center justify-center pointer-events-none">
-                <span className="block font-headline text-3xl font-bold text-white">
+                <span className="block font-sans text-xl font-bold text-white">
                   {reservasTotalesCount}
                 </span>
                 <span className="block font-sans text-[10px] text-[#b2ceb4] uppercase tracking-widest font-semibold">
@@ -542,7 +542,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
         <div className="bg-[#1b1e1b] rounded-xl border border-neutral-800/40 border-t-2 border-[#D29B6C] p-6 shadow-xl space-y-6">
           <div className="flex items-center gap-2 pb-2 border-b border-neutral-900">
             <PieChart className="w-5 h-5 text-indigo-400" />
-            <h3 className="text-lg font-headline font-semibold text-neutral-200">
+            <h3 className="text-sm font-sans font-bold text-neutral-100">
               Canal de Captación
             </h3>
           </div>
@@ -657,7 +657,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                 })}
               </svg>
               <div className="absolute text-center flex flex-col items-center justify-center pointer-events-none">
-                <span className="block font-headline text-3xl font-bold text-white">100%</span>
+                <span className="block font-sans text-xl font-bold text-white">100%</span>
                 <span className="block font-sans text-[10px] text-[#b2ceb4] uppercase tracking-widest font-semibold">
                   Reservas
                 </span>
@@ -738,7 +738,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                 <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
               </svg>
             </span>
-            <h3 className="text-lg font-headline font-bold text-white tracking-wide">
+            <h3 className="text-sm font-sans font-bold text-neutral-100 tracking-wide">
               Ingresos Mensuales Totales
             </h3>
           </div>
@@ -886,7 +886,7 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                     <span className="text-[10px] font-sans font-extrabold text-neutral-400 tracking-wider uppercase">
                       PARTICIPACIÓN: {totalAnnual > 0 ? Math.round(((monthlyValues[selectedMonthIndex] || 0) / totalAnnual) * 100) : 0}%
                     </span>
-                    <div className="text-2xl font-headline font-black text-white mt-1 tracking-tight">
+                    <div className="text-lg font-sans font-bold text-white mt-1 tracking-tight">
                       <span className="text-[#10b981] font-bold mr-1">$</span>
                       <span className="text-white font-extrabold">{formatNumber(monthlyValues[selectedMonthIndex] || 0)}</span>
                       <span className="text-[#10b981] text-xs font-bold ml-1.5 uppercase tracking-wider">CLP</span>

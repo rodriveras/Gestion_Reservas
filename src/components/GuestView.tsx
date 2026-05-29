@@ -113,7 +113,7 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin, isAdminLog
       {/* Branding Headline & Controls */}
       <section className="flex flex-row justify-between items-start w-full gap-4 pb-2 border-b border-neutral-900/40">
         <div className="text-left">
-          <h2 className="text-xl sm:text-2xl md:text-3xl font-headline font-bold text-white">
+          <h2 className="text-sm font-sans font-bold text-neutral-100">
             Cabañas Entre Nieves
           </h2>
         </div>
@@ -310,7 +310,7 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin, isAdminLog
         <div className="absolute top-0 right-0 w-64 h-64 bg-[#4a634e]/10 rounded-full blur-3xl -mr-32 -mt-32"></div>
         <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="max-w-xl text-center md:text-left">
-            <h3 className="text-lg font-headline font-semibold text-neutral-100 mb-1">
+            <h3 className="text-sm font-sans font-bold text-neutral-100 mb-1">
               ¿Necesitas una atención personalizada?
             </h3>
             <p className="text-xs font-sans text-neutral-400 leading-relaxed">

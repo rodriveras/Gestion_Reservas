@@ -109,7 +109,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
           Volver
         </button>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h2 className="text-2xl font-headline font-bold text-white">
+          <h2 className="text-sm font-sans font-bold text-neutral-100">
             {isEditingState ? "Editar Cabaña" : "Nueva Cabaña"}
           </h2>
           {cabanas && cabanas.length > 0 && (
@@ -162,7 +162,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
           <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800/40 shadow-xl space-y-6">
             <div className="flex items-center gap-2 mb-2 text-[#f6bb89] pb-2 border-b border-neutral-850">
               <Zap className="w-5 h-5 text-[#f6bb89]" />
-              <h3 className="text-base font-sans font-bold text-neutral-100">
+              <h3 className="text-sm font-sans font-bold text-neutral-100">
                 Información Principal
               </h3>
             </div>
@@ -267,7 +267,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
           <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800/40 shadow-xl space-y-4">
             <div className="flex items-center gap-2 mb-2 text-[#f6bb89] pb-2 border-b border-neutral-850">
               <Shield className="w-5 h-5" />
-              <h3 className="text-base font-sans font-bold text-neutral-100">
+              <h3 className="text-sm font-sans font-bold text-neutral-100">
                 Especificaciones Técnicas
               </h3>
             </div>

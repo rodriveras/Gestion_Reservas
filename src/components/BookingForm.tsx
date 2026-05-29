@@ -533,7 +533,7 @@ export default function BookingForm({
             <ArrowLeft className="w-4 h-4" />
             Volver
           </button>
-          <h2 className="text-3xl font-headline font-bold text-[#b2ceb4]">
+          <h2 className="text-sm font-sans font-bold text-neutral-100">
             {existingBooking ? "Consulta de reserva" : "Nueva Reserva"}
           </h2>
         </div>
@@ -550,7 +550,7 @@ export default function BookingForm({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Section: Customer & Unit selection */}
           <div className="lg:col-span-7 bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-            <h3 className="text-lg font-sans font-bold text-neutral-100 pb-2 border-b border-neutral-850 flex flex-col md:flex-row md:items-center justify-between gap-2">
+            <h3 className="text-sm font-sans font-bold text-neutral-100 pb-2 border-b border-neutral-850 flex flex-col md:flex-row md:items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-[#f6bb89]" />
                 <span>Cliente y Unidad</span>
@@ -748,7 +748,7 @@ export default function BookingForm({
 
           {/* Section: Stay Details */}
           <div className="lg:col-span-5 bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-            <h3 className="text-lg font-sans font-bold text-neutral-100 pb-2 border-b border-neutral-850 flex items-center gap-2">
+            <h3 className="text-sm font-sans font-bold text-neutral-100 pb-2 border-b border-neutral-850 flex items-center gap-2">
               <Calendar className="w-5 h-5 text-[#f6bb89]" />
               Detalles de la Estadía
             </h3>
@@ -844,7 +844,7 @@ export default function BookingForm({
 
         {/* Section financial details */}
         <div className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-          <h4 className="text-lg font-sans font-bold text-neutral-100 pb-2 border-b border-neutral-850 flex items-center gap-2">
+          <h4 className="text-sm font-sans font-bold text-neutral-100 pb-2 border-b border-neutral-850 flex items-center gap-2">
             <Landmark className="w-5 h-5 text-[#b2ceb4]" />
             Información Financiera
           </h4>

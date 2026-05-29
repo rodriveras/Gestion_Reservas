@@ -341,7 +341,7 @@ export default function CalendarView({
             <ArrowLeft className="w-4 h-4" />
             Volver
           </button>
-          <h2 className="text-xl md:text-2xl font-headline font-bold text-white">
+          <h2 className="text-sm font-sans font-bold text-neutral-100">
             Disponibilidad y reservas
           </h2>
         </div>
@@ -393,7 +393,7 @@ export default function CalendarView({
         {/* Left: 8 cols - Calendar Grid Card */}
         <div className="lg:col-span-8 bg-[#1b1e1b] rounded-xl p-6 border-t-2 border-[#f6bb89]/70 shadow-xl border-x border-b border-neutral-900/30">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-lg font-headline font-semibold text-neutral-100">
+            <h3 className="text-sm font-sans font-bold text-neutral-100">
               {selectedCabanaId === "all" 
                 ? "Planificador" 
                 : (safeCabanas.find((c) => c.id === selectedCabanaId)?.nombre || "Detalle de Unidad")}
@@ -747,7 +747,7 @@ export default function CalendarView({
         <div className="lg:col-span-4 bg-[#1b1e1b] rounded-xl p-6 border-t-2 border-[#f6bb89]/70 shadow-xl flex flex-col border-x border-b border-neutral-900/30 min-h-[480px]">
           <div className="flex items-center gap-2 mb-6 pb-2 border-b border-neutral-900">
             <ArrowLeftRight className="w-4 h-4 text-[#f6bb89]" />
-            <h3 className="text-lg font-headline font-semibold text-neutral-100">
+            <h3 className="text-sm font-sans font-bold text-neutral-100">
               {selectedCabanaId === "all" ? "Reservas Activas" : "Próximas Llegadas"}
             </h3>
           </div>

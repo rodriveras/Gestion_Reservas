@@ -126,7 +126,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
           <ArrowLeft className="w-4 h-4" />
           Volver
         </button>
-        <h2 className="text-2xl font-headline font-bold text-white">
+        <h2 className="text-sm font-sans font-bold text-neutral-100">
           Contratar Servicio
         </h2>
       </div>
@@ -134,7 +134,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
       <form onSubmit={handleSubmit} className="space-y-6 pb-20">
         {/* Section 1: Detalles del Servicio */}
         <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-          <h3 className="text-base font-sans font-bold text-neutral-100 flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-neutral-850">
+          <h3 className="text-sm font-sans font-bold text-neutral-100 flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-neutral-850">
             <div className="flex items-center gap-2">
               <LinkIcon className="w-4.5 h-4.5 text-[#f6bb89]" />
               <span>Detalles del Servicio</span>
@@ -248,7 +248,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
 
         {/* Section 2: Condiciones y Valores */}
         <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-          <h3 className="text-base font-sans font-bold text-neutral-100 flex items-center gap-2 pb-2 border-b border-neutral-850">
+          <h3 className="text-sm font-sans font-bold text-neutral-100 flex items-center gap-2 pb-2 border-b border-neutral-850">
             <span className="material-symbols-outlined text-[#f6bb89] font-bold">payments</span>
             Condiciones y Valores
           </h3>
@@ -316,7 +316,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
 
         {/* Section 3: Estado y Pago */}
         <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-          <h3 className="text-base font-sans font-bold text-neutral-100 flex items-center gap-2 pb-2 border-b border-neutral-850">
+          <h3 className="text-sm font-sans font-bold text-neutral-100 flex items-center gap-2 pb-2 border-b border-neutral-850">
             <span className="material-symbols-outlined text-[#f6bb89] font-bold">verified_user</span>
             Estado y Pago
           </h3>
