@@ -318,22 +318,22 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin, isAdminLog
               una estadía inolvidable.
             </p>
           </div>
-          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+          <div className="flex flex-row gap-3 w-full md:w-auto">
             <a
               href={whatsappLink}
               target="_blank"
               rel="noreferrer"
-              className="flex items-center justify-center gap-2 bg-[#4a634e] text-white rounded-full px-6 py-2.5 hover:brightness-110 active:scale-95 transition-all font-sans text-xs font-bold uppercase tracking-wider cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-2 bg-[#4a634e] text-white rounded-full px-4 py-2.5 hover:brightness-110 active:scale-95 transition-all font-sans text-xs font-bold uppercase tracking-wider cursor-pointer"
             >
-              <MessageSquare className="w-4 h-4" />
-              WhatsApp
+              <MessageSquare className="w-4 h-4 shrink-0" />
+              <span>WhatsApp</span>
             </a>
             <a
               href={phoneLink}
-              className="flex items-center justify-center gap-2 border border-[#D29B6C] text-[#f6bb89] rounded-full px-6 py-2.5 hover:bg-neutral-800 active:scale-95 transition-all font-sans text-xs font-bold uppercase tracking-wider cursor-pointer"
+              className="flex-1 flex items-center justify-center gap-2 border border-[#D29B6C] text-[#f6bb89] rounded-full px-4 py-2.5 hover:bg-neutral-800 active:scale-95 transition-all font-sans text-xs font-bold uppercase tracking-wider cursor-pointer"
             >
-              <Phone className="w-4 h-4 animate-bounce" />
-              Llamar ahora
+              <Phone className="w-4 h-4 animate-bounce shrink-0" />
+              <span>Llamar</span>
             </a>
           </div>
         </div>

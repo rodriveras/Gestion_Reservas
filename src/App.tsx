@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { Trees, User, Bell, HelpCircle, Shield, Briefcase, ChevronRight, Cloud, CloudOff, RefreshCw, Calendar, Settings, Home, LogOut } from "lucide-react";
+import { Trees, User, Bell, HelpCircle, Shield, Briefcase, ChevronRight, Cloud, CloudOff, RefreshCw, Calendar, Settings, Home, LogOut, Smartphone, Monitor } from "lucide-react";
 
 // Types and Seed lists
 import {
@@ -515,16 +515,6 @@ export default function App() {
 
           {/* Profiles navigation items */}
           <div className="flex items-center gap-4">
-            {/* Support Indicator */}
-            <button
-              onClick={() => setCurrentScreen("guest")}
-              className="hidden md:flex items-center gap-1.5 text-xs text-neutral-400 hover:text-white transition-all font-sans font-semibold border border-neutral-800 rounded-full px-3 py-1 bg-neutral-900"
-              title="Vista de Huéspedes"
-            >
-              <Shield className="w-3 h-3 text-[#b2ceb4]" />
-              <span>Vista Huésped</span>
-            </button>
-
             <button className="relative p-2 text-neutral-400 hover:text-white transition-colors duration-200">
               <Bell className="w-5 h-5 text-[#b2ceb4]" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f6bb89] rounded-full"></span>

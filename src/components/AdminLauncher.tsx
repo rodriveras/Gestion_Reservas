@@ -32,7 +32,7 @@ export default function AdminLauncher({
       className="space-y-4 md:space-y-8"
     >
       {/* Hero Section */}
-      <section className="relative h-[85px] xs:h-[105px] md:h-[200px] w-full rounded-2xl overflow-hidden shadow-2xl border border-neutral-800/40">
+      <section className="relative h-[150px] xs:h-[190px] md:h-[300px] w-full rounded-2xl overflow-hidden shadow-2xl border border-neutral-800/40">
         <img
           alt="Lodge Background"
           className="w-full h-full object-cover brightness-[0.55] scale-105"

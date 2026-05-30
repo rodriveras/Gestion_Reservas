@@ -64,11 +64,17 @@ export default function CalendarView({
   const generateMonthOptions = () => {
     const options = [];
     const baseDate = new Date();
-    // Rango dinámico de 12 meses antes hasta 24 meses después
-    const start = new Date(baseDate.getFullYear(), baseDate.getMonth() - 12, 1);
-    for (let i = 0; i < 37; i++) {
-      const d = new Date(start.getFullYear(), start.getMonth() + i, 1);
-      options.push(d);
+    const currentYear = baseDate.getFullYear();
+    const currentMonth = baseDate.getMonth();
+    
+    // Sólo los meses del año en curso, con un máximo de 6 meses
+    for (let i = 0; i < 6; i++) {
+      const d = new Date(currentYear, currentMonth + i, 1);
+      if (d.getFullYear() === currentYear) {
+        options.push(d);
+      } else {
+        break; // Detenerse si cruza al siguiente año
+      }
     }
     return options;
   };
@@ -405,7 +411,7 @@ export default function CalendarView({
                   const [year, month] = e.target.value.split("-").map(Number);
                   setCurrentDate(new Date(year, month, 1));
                 }}
-                className="bg-[#121412]/60 text-xs font-sans font-bold text-[#b2ceb4] border border-neutral-800/40 pl-3 pr-8 py-1 rounded-lg outline-none appearance-none cursor-pointer hover:border-neutral-700 hover:text-white transition-all h-8 min-w-[140px]"
+                className="bg-[#121412]/60 text-[11px] font-sans font-bold text-[#b2ceb4] border border-neutral-850/60 pl-2 pr-6 py-0.5 rounded-md outline-none appearance-none cursor-pointer hover:border-neutral-700 hover:text-white transition-all h-7 min-w-[125px]"
               >
                 {generateMonthOptions().map((opt) => {
                   const val = `${opt.getFullYear()}-${opt.getMonth()}`;
@@ -416,7 +422,7 @@ export default function CalendarView({
                   );
                 })}
               </select>
-              <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-400 text-xs">
+              <span className="material-symbols-outlined absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none text-neutral-500 text-[10px]">
                 expand_more
               </span>
             </div>
@@ -838,7 +844,7 @@ export default function CalendarView({
                   {selectedReservaId === arr.id && (
                     <div 
                       onClick={(e) => e.stopPropagation()} 
-                      className="mt-3 p-3 bg-[#171a17] border border-[#b2ceb4]/20 rounded-xl space-y-2.5 shadow-inner cursor-default"
+                      className="mt-2.5 p-2.5 bg-[#171a17] border border-[#b2ceb4]/20 rounded-xl space-y-2 shadow-inner cursor-default text-[10px]"
                     >
                       <div className="flex items-center gap-1.5 border-b border-neutral-850 pb-1.5">
                         <span className="material-symbols-outlined text-[#f6bb89] text-base">payments</span>
@@ -855,58 +861,58 @@ export default function CalendarView({
                       ) : (
                         <div className="space-y-2">
                           {/* Payment Amount Input */}
-                          <div className="space-y-1">
-                            <label className="block text-[8px] font-sans font-bold text-neutral-400 uppercase tracking-widest">
+                          <div className="space-y-0.5">
+                            <label className="block text-[7px] font-sans font-bold text-neutral-400 uppercase tracking-widest">
                               Monto a Pagar ($)
                             </label>
                             <div className="relative">
-                              <span className="absolute left-2.5 top-1/2 -translate-y-1/2 font-bold text-neutral-500 text-[10px]">$</span>
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 font-bold text-neutral-500 text-[9px]">$</span>
                               <input
                                 type="number"
                                 required
                                 value={amountToPay}
                                 onChange={(e) => setAmountToPay(e.target.value)}
                                 placeholder="0.00"
-                                className="w-full pl-6 pr-3 py-1 bg-[#121412] text-neutral-200 border border-neutral-800 focus:border-[#b2ceb4] rounded-lg text-xs font-bold outline-none"
+                                className="w-full pl-5 pr-2 py-0.5 bg-[#121412] text-neutral-200 border border-neutral-850 focus:border-[#b2ceb4] rounded-md text-[11px] font-bold outline-none h-7"
                               />
                             </div>
                           </div>
 
                           {/* Payment Method Select */}
-                          <div className="space-y-1">
-                            <label className="block text-[8px] font-sans font-bold text-neutral-400 uppercase tracking-widest">
+                          <div className="space-y-0.5">
+                            <label className="block text-[7px] font-sans font-bold text-neutral-400 uppercase tracking-widest">
                               Método de Pago
                             </label>
                             <div className="relative">
                               <select
                                 value={paymentMethod}
                                 onChange={(e) => setPaymentMethod(e.target.value as any)}
-                                className="w-full bg-[#121412] text-neutral-200 border border-neutral-800 focus:border-[#b2ceb4] rounded-lg p-1.5 text-xs font-semibold outline-none appearance-none cursor-pointer"
+                                className="w-full bg-[#121412] text-neutral-200 border border-neutral-850 focus:border-[#b2ceb4] rounded-md px-2 py-1 text-[11px] font-semibold outline-none appearance-none cursor-pointer h-7"
                               >
                                 <option value="Transferencia">Transferencia</option>
                                 <option value="Efectivo">Efectivo</option>
                                 <option value="Tarjeta">Tarjeta</option>
                               </select>
-                              <span className="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none text-sm">
+                              <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none text-[10px]">
                                 expand_more
                               </span>
                             </div>
                           </div>
 
                           {/* Confirm / Cancel Buttons */}
-                          <div className="flex gap-2 pt-1">
+                          <div className="flex gap-2 pt-0.5">
                             <button
                               type="button"
                               onClick={() => handleConfirmPayment(arr.id, arr.balance)}
-                              className="flex-1 py-1.5 bg-[#4a634e] hover:bg-[#455c49] text-white font-bold rounded-lg text-[9px] font-sans uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-md border border-[#b2ceb4]/10"
+                              className="flex-1 py-1 bg-[#4a634e] hover:bg-[#455c49] text-white font-bold rounded-md text-[8px] font-sans uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-0.5 shadow-md border border-[#b2ceb4]/10 h-7.5"
                             >
-                              <span className="material-symbols-outlined text-[10px]">done</span>
+                              <span className="material-symbols-outlined text-[9px]">done</span>
                               Confirmar Pago
                             </button>
                             <button
                               type="button"
                               onClick={() => setSelectedReservaId(null)}
-                              className="px-3 py-1.5 bg-neutral-900 hover:bg-neutral-850 text-neutral-400 font-bold rounded-lg text-[9px] font-sans uppercase tracking-wider transition-all cursor-pointer border border-neutral-800"
+                              className="px-2.5 py-1 bg-neutral-900 hover:bg-neutral-850 text-neutral-400 font-bold rounded-md text-[8px] font-sans uppercase tracking-wider transition-all cursor-pointer border border-neutral-850 h-7.5"
                             >
                               Cancelar
                             </button>

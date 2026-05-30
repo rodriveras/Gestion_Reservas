@@ -82,7 +82,7 @@ export default function ConfigModal({ isOpen, onClose, config, onSave }: ConfigM
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
-            className="relative w-full max-w-lg bg-[#161916] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden z-10"
+            className="relative w-full max-w-md bg-[#161916] border border-neutral-800 rounded-2xl shadow-2xl overflow-hidden z-10"
           >
             {/* Top Orange/Gold Border Accent */}
             <div className="h-1.5 w-full bg-gradient-to-r from-[#D29B6C] to-[#f6bb89]" />

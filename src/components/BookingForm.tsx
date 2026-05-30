@@ -577,7 +577,7 @@ export default function BookingForm({
                 )}
                 {exceedsCapacity && (
                   <span className="text-[10px] font-sans font-bold bg-red-950/45 text-red-400 border border-red-900/40 px-3 py-1 rounded-full animate-pulse shadow-md shadow-red-950/20 block text-right">
-                    ⚠️ Excede la cantidad máxima de personas
+                    ⚠️ Capacidad excedida
                   </span>
                 )}
                 {hasDepositError && (
@@ -613,9 +613,11 @@ export default function BookingForm({
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
                       person
                     </span>
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                      expand_more
-                    </span>
+                    {isEditMode && !viewBookingId && (
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                        expand_more
+                      </span>
+                    )}
                   </div>
                   {isEditMode && onCreateClient && (
                     <button
@@ -657,9 +659,11 @@ export default function BookingForm({
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
                       cottage
                     </span>
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                      expand_more
-                    </span>
+                    {isEditMode && !viewBookingId && (
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                        expand_more
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -682,7 +686,7 @@ export default function BookingForm({
 
                   {/* Collapsible Calendar Grid Popover for Booking Date (Discreet absolute overlay) */}
                   {isBookingDateCalendarExpanded && (
-                    <div className="absolute z-50 left-0 right-0 top-[64px] bg-[#121412] border border-neutral-800 rounded-xl shadow-2xl shadow-black/90">
+                    <div className="absolute z-50 left-0 right-0 md:left-auto md:right-0 md:w-[320px] top-[64px] bg-[#121412] border border-neutral-800 rounded-xl shadow-2xl shadow-black/90 animate-in fade-in slide-in-from-top-2 duration-150">
                       {renderBookingDateCalendar()}
                     </div>
                   )}
@@ -711,9 +715,11 @@ export default function BookingForm({
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
                       date_range
                     </span>
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                      expand_more
-                    </span>
+                    {isEditMode && !viewBookingId && (
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                        expand_more
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -737,9 +743,11 @@ export default function BookingForm({
                     <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
                       group
                     </span>
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                      expand_more
-                    </span>
+                    {isEditMode && (
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                        expand_more
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>
@@ -793,7 +801,7 @@ export default function BookingForm({
 
                 {/* Collapsible Calendar Grid Popover (Discreet absolute overlay) */}
                 {isCalendarExpanded && (
-                  <div className="absolute z-50 left-0 right-0 top-[74px] bg-[#121412] border border-neutral-800 rounded-xl shadow-2xl shadow-black/90">
+                  <div className="absolute z-50 left-0 right-0 md:left-auto md:right-0 md:w-[320px] top-[74px] bg-[#121412] border border-neutral-800 rounded-xl shadow-2xl shadow-black/90 animate-in fade-in slide-in-from-top-2 duration-150">
                     {renderMiniCalendar()}
                   </div>
                 )}
@@ -833,9 +841,11 @@ export default function BookingForm({
                     <option value="Facebook">Facebook</option>
                     <option value="Otros">Otros</option>
                   </select>
-                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                    expand_more
-                  </span>
+                  {isEditMode && (
+                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                      expand_more
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
@@ -910,9 +920,7 @@ export default function BookingForm({
                   <option value="Pendiente de Pago">Pendiente de Pago</option>
                   <option value="Pagada">Pagada</option>
                 </select>
-                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                  expand_more
-                </span>
+                {/* No arrow since it is always disabled */}
               </div>
             </div>
 
@@ -932,9 +940,11 @@ export default function BookingForm({
                   <option value="Tarjeta">Tarjeta</option>
                   <option value="Transferencia">Transferencia</option>
                 </select>
-                <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                  expand_more
-                </span>
+                {isEditMode && (
+                  <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                    expand_more
+                  </span>
+                )}
               </div>
             </div>
           </div>

@@ -161,12 +161,12 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
           <ArrowLeft className="w-4 h-4" />
           Volver
         </button>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-row items-center justify-between gap-4 flex-wrap pb-1">
           <h2 className="text-sm font-sans font-bold text-neutral-100">
             {isEditingState ? "Editar Cliente" : "Crear Cliente"}
           </h2>
           {clientes && clientes.length > 0 && (
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <button
                 type="button"
                 onClick={() => {
@@ -176,13 +176,13 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                   }
                 }}
                 title={isEditingState ? "Modo Crear Cliente" : "Editar Cliente"}
-                className={`w-10 h-10 flex items-center justify-center rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg shrink-0 border ${
+                className={`w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-xl transition-all active:scale-95 cursor-pointer shadow-lg shrink-0 border ${
                   isEditingState
                     ? "bg-[#1e201e] text-[#b2ceb4] border-[#4a634e] ring-2 ring-[#b2ceb4]/10"
                     : "bg-[#1b1e1b] text-[#f6bb89] border-neutral-800 hover:text-white hover:bg-neutral-800"
                 }`}
               >
-                <UserCheck className="w-4.5 h-4.5" />
+                <UserCheck className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
               </button>
 
               {isEditingState && (
@@ -190,7 +190,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                   <select
                     value={selectedClientId}
                     onChange={(e) => handleSelectClientToEdit(e.target.value)}
-                    className="pl-3 pr-8 py-2 bg-[#121412] text-xs font-medium text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg outline-none appearance-none cursor-pointer min-w-[200px]"
+                    className="pl-3 pr-8 py-2 bg-[#121412] text-xs font-medium text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg outline-none appearance-none cursor-pointer min-w-[150px] xs:min-w-[200px]"
                   >
                     <option value="">-- Seleccione Cliente --</option>
                     {clientes.map((c) => (
@@ -271,9 +271,11 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                 <input
                   type="tel"
                   required
-                  placeholder="+54 9 11 1234-5678"
+                  placeholder="+56 9 1234 5678"
+                  pattern="[+]?[0-9\s\-]{7,18}"
+                  title="Formato de teléfono válido (Ej: +56 9 1234 5678 o 912345678)"
                   value={telefono}
-                  onChange={(e) => setTelefono(e.target.value)}
+                  onChange={(e) => setTelefono(e.target.value.replace(/[^0-9+\s-]/g, ""))}
                   className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none transition-all"
                 />
               </div>
