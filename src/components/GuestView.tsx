@@ -393,6 +393,25 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin, isAdminLog
                 <circle cx="18" cy="5" r="3" />
               </svg>
             </a>
+            <a
+              href="https://www.instagram.com/cabanasentrenieves?igsh=aG55czRiM2t3dWEx"
+              target="_blank"
+              rel="noreferrer"
+              className="w-11 h-11 flex items-center justify-center border border-[#e1306c] text-[#f472b6] rounded-full hover:bg-[#e1306c]/10 active:scale-95 transition-all cursor-pointer shadow-md"
+              title="Síguenos en Instagram"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                className="w-5 h-5 shrink-0 fill-none stroke-current"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+                <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z" />
+                <line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+              </svg>
+            </a>
           </div>
         </div>
       </section>
