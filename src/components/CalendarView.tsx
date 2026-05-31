@@ -47,6 +47,7 @@ export default function CalendarView({
   const [selectedReservaId, setSelectedReservaId] = useState<string | null>(null);
   const [amountToPay, setAmountToPay] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"Efectivo" | "Tarjeta" | "Transferencia">("Transferencia");
+  const [isPaymentFormOpen, setIsPaymentFormOpen] = useState<boolean>(false);
 
   const isPastDay = (dayNumber: number) => {
     const today = new Date();
@@ -325,6 +326,49 @@ export default function CalendarView({
 
     alert("¡Pago registrado satisfactoriamente!");
     setSelectedReservaId(null);
+  };
+
+  const handleAnticipateCheckOut = (bookingId: string) => {
+    const booking = safeReservas.find((r) => r.id === bookingId);
+    if (!booking) {
+      alert("Error: Reserva no encontrada.");
+      return;
+    }
+
+    if (!window.confirm("¿Está seguro de realizar el Check-Out anticipado para el día de hoy? Esto recalculará las noches de estadía.")) {
+      return;
+    }
+
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${year}-${month}-${day}`;
+
+    // Recalculate nights
+    const start = parseLocalDate(booking.checkIn);
+    const checkInDate = new Date(start);
+    checkInDate.setHours(12, 0, 0, 0);
+    const todayDateCloned = new Date(today);
+    todayDateCloned.setHours(12, 0, 0, 0);
+    const diffTime = todayDateCloned.getTime() - checkInDate.getTime();
+    let newNoches = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    if (newNoches < 1) newNoches = 1;
+
+    const updatedBooking: Reserva = {
+      ...booking,
+      checkOut: todayStr,
+      noches: newNoches,
+    };
+
+    // Save the updated booking
+    if (onSaveBooking) {
+      onSaveBooking(updatedBooking);
+    }
+
+    alert(`¡Check-Out anticipado realizado con éxito! Salida programada para hoy (${todayStr}) y duración de estadía actualizada a ${newNoches} noche(s).`);
+    setSelectedReservaId(null);
+    setIsPaymentFormOpen(false);
   };
 
   const formatCurrency = (val: number) => {
@@ -770,16 +814,18 @@ export default function CalendarView({
                   onClick={() => {
                     if (selectedReservaId === arr.id) {
                       setSelectedReservaId(null);
+                      setIsPaymentFormOpen(false);
                     } else {
                       setSelectedReservaId(arr.id);
                       setAmountToPay(arr.balance.toString());
                       setPaymentMethod("Transferencia");
+                      setIsPaymentFormOpen(false);
                     }
                   }}
                   className={`bg-[#121412] p-4 rounded-xl border transition-all cursor-pointer group space-y-3 ${
                     selectedReservaId === arr.id
-                      ? "border-[#b2ceb4] ring-2 ring-[#b2ceb4]/10 shadow-lg shadow-[#b2ceb4]/5"
-                      : "border-neutral-800 hover:border-[#b2ceb4]/40"
+                      ? "border-neutral-700"
+                      : "border-neutral-800 hover:border-neutral-700"
                   }`}
                 >
                   {/* Guest Name & Cabin Badge */}
@@ -840,15 +886,49 @@ export default function CalendarView({
                     </div>
                   </div>
 
-                  {/* Interactive Payment Box when selected */}
-                  {selectedReservaId === arr.id && (
+                  {/* Action Buttons Row: PAGAR and ANTICIPAR CHECK-OUT (Always visible) */}
+                  <div className="grid grid-cols-2 gap-2 mt-3" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (selectedReservaId === arr.id && isPaymentFormOpen) {
+                          setSelectedReservaId(null);
+                          setIsPaymentFormOpen(false);
+                        } else {
+                          setSelectedReservaId(arr.id);
+                          setAmountToPay(arr.balance.toString());
+                          setPaymentMethod("Transferencia");
+                          setIsPaymentFormOpen(true);
+                        }
+                      }}
+                      className={`py-1.5 rounded-lg text-[9px] font-sans font-bold uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-md border ${
+                        selectedReservaId === arr.id && isPaymentFormOpen
+                          ? "bg-[#4a634e] text-white border-[#b2ceb4]/20"
+                          : "bg-[#121412] hover:bg-neutral-900 text-neutral-300 border-neutral-800"
+                      } h-8`}
+                    >
+                      <span className="material-symbols-outlined text-[11px]">payments</span>
+                      Pagar Saldo
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAnticipateCheckOut(arr.id)}
+                      className="py-1.5 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-[9px] font-sans uppercase tracking-wider transition-all cursor-pointer flex items-center justify-center gap-1 shadow-md border border-amber-500/20 h-8"
+                    >
+                      <span className="material-symbols-outlined text-[11px]">logout</span>
+                      Anticipar Check-Out
+                    </button>
+                  </div>
+
+                  {/* Interactive Payment Box when selected & payment form toggled open */}
+                  {selectedReservaId === arr.id && isPaymentFormOpen && (
                     <div 
                       onClick={(e) => e.stopPropagation()} 
-                      className="mt-2.5 p-2.5 bg-[#171a17] border border-[#b2ceb4]/20 rounded-xl space-y-2 shadow-inner cursor-default text-[10px]"
+                      className="mt-3 p-3 bg-gradient-to-br from-[#233525] to-[#131d14] border border-[#3e5642]/60 border-l-4 border-l-[#f6bb89] rounded-xl space-y-3 shadow-xl shadow-black/40 cursor-default text-[10px]"
                     >
-                      <div className="flex items-center gap-1.5 border-b border-neutral-850 pb-1.5">
+                      <div className="flex items-center gap-1.5 pb-1.5 border-b border-neutral-800/60">
                         <span className="material-symbols-outlined text-[#f6bb89] text-base">payments</span>
-                        <span className="text-[10px] font-sans font-black uppercase tracking-wider text-neutral-200">
+                        <span className="text-[10px] font-sans font-black uppercase tracking-wider text-neutral-100">
                           Registrar Pago de Saldo
                         </span>
                       </div>
@@ -873,7 +953,7 @@ export default function CalendarView({
                                 value={amountToPay}
                                 onChange={(e) => setAmountToPay(e.target.value)}
                                 placeholder="0.00"
-                                className="w-full pl-5 pr-2 py-0.5 bg-[#121412] text-neutral-200 border border-neutral-850 focus:border-[#b2ceb4] rounded-md text-[11px] font-bold outline-none h-7"
+                                className="w-full pl-5 pr-2 py-0.5 bg-[#121412] text-neutral-200 border-0 focus:ring-0 rounded-md text-[11px] font-bold outline-none h-7"
                               />
                             </div>
                           </div>
@@ -887,7 +967,7 @@ export default function CalendarView({
                               <select
                                 value={paymentMethod}
                                 onChange={(e) => setPaymentMethod(e.target.value as any)}
-                                className="w-full bg-[#121412] text-neutral-200 border border-neutral-850 focus:border-[#b2ceb4] rounded-md px-2 py-1 text-[11px] font-semibold outline-none appearance-none cursor-pointer h-7"
+                                className="w-full bg-[#121412] text-neutral-200 border-0 focus:ring-0 rounded-md px-2 py-1 text-[11px] font-semibold outline-none appearance-none cursor-pointer h-7"
                               >
                                 <option value="Transferencia">Transferencia</option>
                                 <option value="Efectivo">Efectivo</option>

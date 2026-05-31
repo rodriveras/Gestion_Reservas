@@ -137,22 +137,12 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
         <div className="lg:col-span-12">
           <div className="bg-[#1b1e1b] border-t-2 border-[#D29B6C] border-x border-b border-neutral-800/40 rounded-xl p-6 md:p-8 shadow-xl space-y-6 relative overflow-hidden">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-              {/* ID de Servicio */}
-              <div>
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
-                  ID de Servicio
-                </label>
-                <div className="bg-[#121412] border border-neutral-800/80 p-3.5 rounded-lg flex items-center justify-between">
-                  <span className="font-headline text-lg font-semibold text-[#f6bb89]">{targetId}</span>
-                  <span className="material-symbols-outlined text-neutral-600 text-sm">lock</span>
-                </div>
-                <p className="text-[10px] text-neutral-500 mt-1.5">Generado automáticamente por el sistema</p>
-              </div>
+              {/* ID de Servicio removed */}
 
               {/* Nombre del servicio */}
               <div>
                 <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
-                  Nombre del Servicio
+                  Nombre del Servicio <span className="text-rose-500 font-extrabold">*</span>
                 </label>
                 <input
                   type="text"
@@ -168,7 +158,7 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
               {/* Descripción */}
               <div className="col-span-full">
                 <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
-                  Descripción
+                  Descripción <span className="text-rose-500 font-extrabold">*</span>
                 </label>
                 <textarea
                   rows={4}
@@ -187,7 +177,7 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
               {/* Precio Actual */}
               <div>
                 <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
-                  Precio Actual (USD)
+                  Precio Actual (CLP) <span className="text-rose-500 font-extrabold">*</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#f6bb89] font-bold text-sm">$</span>

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, FormEvent } from "react";
+import { useState, FormEvent, useRef } from "react";
 import { motion } from "motion/react";
 import { ArrowLeft, Save, UserCheck, CalendarDays, Contact, HeartHandshake } from "lucide-react";
 import { Cliente } from "../types";
@@ -18,8 +18,9 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
   const [isEditingState, setIsEditingState] = useState(false);
   const [selectedClientId, setSelectedClientId] = useState("");
 
-  const [tipoDocumento, setTipoDocumento] = useState<"DNI" | "Pasaporte" | "Cédula">("DNI");
+  const [tipoDocumento, setTipoDocumento] = useState<"CEDULA" | "Pasaporte" | "Cédula">("CEDULA");
   const [numeroDocumento, setNumeroDocumento] = useState("");
+  const documentNumberRef = useRef<HTMLInputElement>(null);
   const [nacionalidad, setNacionalidad] = useState("Chile");
   const [ciudadOrigen, setCiudadOrigen] = useState("Santiago");
   const [nombre, setNombre] = useState("");
@@ -117,7 +118,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!nombre.trim() || !apellido.trim()) return;
+    if (!nombre.trim()) return;
 
     const targetId = isEditingState && selectedClientId ? selectedClientId : autoId;
     const originalClient = isEditingState && selectedClientId ? clientes.find((c) => c.id === selectedClientId) : null;
@@ -130,7 +131,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
       nacionalidad,
       ciudadOrigen,
       nombre,
-      apellido,
+      apellido: apellido || "Sin Apellido",
       email: email || "usuario@ejemplo.com",
       telefono: telefono || "+56912345678",
       fechaNacimiento,
@@ -214,7 +215,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
         <div className="lg:col-span-8 space-y-6">
           {/* Section 2: Datos Personales */}
           <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-            <div className="flex items-center gap-2 mb-2 text-[#f6bb89] pb-2 border-b border-neutral-850">
+            <div className="flex items-center gap-2 mb-2 text-[#f6bb89]">
               <Contact className="w-5 h-5" />
               <h3 className="text-sm font-sans font-bold text-neutral-100">
                 Datos Personales y Contacto
@@ -224,7 +225,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
-                  Nombre
+                  Nombre <span className="text-rose-500 font-extrabold">*</span>
                 </label>
                 <input
                   type="text"
@@ -242,7 +243,6 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                 </label>
                 <input
                   type="text"
-                  required
                   placeholder="Ingrese apellido"
                   value={apellido}
                   onChange={(e) => setApellido(e.target.value)}
@@ -256,7 +256,6 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                 </label>
                 <input
                   type="email"
-                  required
                   placeholder="nombre@ejemplo.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -266,7 +265,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
 
               <div>
                 <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
-                  Teléfono
+                  Teléfono <span className="text-rose-500 font-extrabold">*</span>
                 </label>
                 <input
                   type="tel"
@@ -284,7 +283,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
 
           {/* Section 1: Identidad */}
           <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-            <div className="flex items-center gap-2 mb-2 text-[#f6bb89] pb-2 border-b border-neutral-850">
+            <div className="flex items-center gap-2 mb-2 text-[#f6bb89]">
               <UserCheck className="w-5 h-5" />
               <h3 className="text-sm font-sans font-bold text-neutral-100">
                 Información de Identidad
@@ -294,37 +293,29 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
-                  ID Cliente
-                </label>
-                <input
-                  type="text"
-                  value={isEditingState && selectedClientId ? selectedClientId : autoId}
-                  readOnly
-                  className="w-full bg-[#121412] text-neutral-500 border border-neutral-700 rounded-lg py-1.5 px-2.5 text-xs font-semibold opacity-75 cursor-not-allowed"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
                   Tipo de Documento
                 </label>
                 <select
                   value={tipoDocumento}
-                  onChange={(e) => setTipoDocumento(e.target.value as any)}
+                  onChange={(e) => {
+                    setTipoDocumento(e.target.value as any);
+                    documentNumberRef.current?.focus();
+                  }}
                   disabled={isEditingState}
                   className="w-full bg-[#121412] text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none disabled:opacity-60 disabled:cursor-not-allowed"
                 >
-                  <option value="DNI">DNI</option>
+                  <option value="CEDULA">CEDULA</option>
                   <option value="Pasaporte">Pasaporte</option>
                   <option value="Cédula">Cédula</option>
                 </select>
               </div>
 
-              <div className="col-span-full">
+              <div>
                 <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
-                  Número de Documento
+                  Número de Documento <span className="text-rose-500 font-extrabold">*</span>
                 </label>
                 <input
+                  ref={documentNumberRef}
                   type="text"
                   required
                   placeholder="Ej: 45.321.987"
@@ -370,7 +361,6 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                   <div>
                     <input
                       type="date"
-                      required
                       value={fechaNacimiento}
                       onChange={(e) => setFechaNacimiento(e.target.value)}
                       className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg py-1.5 px-2.5 text-xs outline-none h-8"
@@ -425,7 +415,7 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
 
           {/* Section 3: Preferencias y Estado */}
           <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-            <div className="flex items-center gap-2 mb-2 text-[#f6bb89] pb-2 border-b border-neutral-850">
+            <div className="flex items-center gap-2 mb-2 text-[#f6bb89]">
               <HeartHandshake className="w-5 h-5" />
               <h3 className="text-sm font-sans font-bold text-neutral-100">
                 Preferencias y Estado
@@ -471,7 +461,6 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
                   </label>
                   <input
                     type="text"
-                    required
                     placeholder="@usuario"
                     value={redSocialUser}
                     onChange={(e) => setRedSocialUser(e.target.value)}

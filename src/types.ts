@@ -23,7 +23,7 @@ export interface Cabana {
 
 export interface Cliente {
   id: string;
-  tipoDocumento: 'DNI' | 'Pasaporte' | 'Cédula';
+  tipoDocumento: 'CEDULA' | 'Pasaporte' | 'Cédula';
   numeroDocumento: string;
   nacionalidad: string;
   ciudadOrigen: string;

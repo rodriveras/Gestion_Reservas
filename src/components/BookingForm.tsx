@@ -824,7 +824,7 @@ export default function BookingForm({
                         disabled={!isEditMode || !!viewBookingId}
                         className="w-full pl-10 pr-10 bg-[#0b0c0b] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-sans font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed h-11"
                       >
-                        {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
+                        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
                           <option key={n} value={n}>
                             {n} {n === 1 ? "Día" : "Días"}
                           </option>
@@ -1006,7 +1006,7 @@ export default function BookingForm({
             {/* Monto Total */}
             <div className="space-y-1">
               <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
-                MONTO TOTAL ($)
+                MONTO TOTAL ($) <span className="text-rose-500 font-extrabold">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-[#b2ceb4] text-sm">$</span>

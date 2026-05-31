@@ -67,7 +67,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!nombre.trim()) return;
+    if (!nombre.trim() || !precioBase.trim()) return;
 
     if (Number(precioBase) < 0) {
       alert("Error: El precio base por noche no puede ser negativo.");
@@ -165,7 +165,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
         {/* Left Inputs */}
         <div className="lg:col-span-8 space-y-6">
           <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800/40 shadow-xl space-y-6">
-            <div className="flex items-center gap-2 mb-2 text-[#f6bb89] pb-2 border-b border-neutral-850">
+            <div className="flex items-center gap-2 mb-2 text-[#f6bb89]">
               <Zap className="w-5 h-5 text-[#f6bb89]" />
               <h3 className="text-sm font-sans font-bold text-neutral-100">
                 Información Principal
@@ -173,23 +173,11 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* ID Read Only */}
-              <div className="col-span-full">
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
-                  ID de Cabaña
-                </label>
-                <input
-                  type="text"
-                  value={isEditingState && selectedCabinId ? selectedCabinId : newCabinId}
-                  readOnly
-                  className="w-full bg-[#121412] text-neutral-500 border border-neutral-800/80 rounded-lg p-3 text-sm font-semibold opacity-75 cursor-not-allowed"
-                />
-              </div>
 
               {/* Nombre de la cabaña */}
               <div className="col-span-full">
                 <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
-                  Nombre de la Cabaña
+                  Nombre de la Cabaña <span className="text-rose-500 font-extrabold">*</span>
                 </label>
                 <input
                   type="text"
@@ -237,7 +225,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
               {/* Precio Base por Noche */}
               <div>
                 <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
-                  Precio Base por Noche (CLP)
+                  Precio Base por Noche (CLP) <span className="text-rose-500 font-extrabold">*</span>
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#f6bb89] font-bold text-sm">$</span>
@@ -276,7 +264,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
 
           {/* Especificaciones Técnicas */}
           <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800/40 shadow-xl space-y-4">
-            <div className="flex items-center gap-2 mb-2 text-[#f6bb89] pb-2 border-b border-neutral-850">
+            <div className="flex items-center gap-2 mb-2 text-[#f6bb89]">
               <Shield className="w-5 h-5" />
               <h3 className="text-sm font-sans font-bold text-neutral-100">
                 Especificaciones Técnicas
@@ -347,7 +335,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
         <div className="lg:col-span-4 space-y-6">
           {/* Multimedia */}
           <section className="bg-[#1e201e] rounded-xl p-5 border border-neutral-800/40 shadow-xl space-y-4">
-            <div className="flex items-center gap-2 mb-1 text-[#f6bb89] pb-2 border-b border-neutral-850">
+            <div className="flex items-center gap-2 mb-1 text-[#f6bb89]">
               <ImageIcon className="w-4 h-4" />
               <h3 className="text-sm font-sans font-bold text-neutral-100">
                 Fotografía & Multimedia
@@ -383,7 +371,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
 
           {/* Location details */}
           <section className="bg-[#1e201e] rounded-xl p-5 border border-neutral-800/40 shadow-xl space-y-4">
-            <div className="flex items-center gap-2 mb-1 text-[#f6bb89] pb-2 border-b border-neutral-850">
+            <div className="flex items-center gap-2 mb-1 text-[#f6bb89]">
               <MapPin className="w-4 h-4" />
               <h3 className="text-sm font-sans font-bold text-neutral-100">
                 Ubicación Satelital

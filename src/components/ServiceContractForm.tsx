@@ -86,7 +86,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    if (!reservaId || !clienteId || !servicioId) return;
+    if (!reservaId || !clienteId || !servicioId || !precioPactado.trim()) return;
 
     if (selectedServiceObj && selectedServiceObj.estado !== "Activo") {
       alert(`Error: El servicio seleccionado no se encuentra activo (Estado: ${selectedServiceObj.estado}).`);
@@ -272,7 +272,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
             {/* Precio Pactado */}
             <div className="space-y-1">
               <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                Precio Pactado (CLP)
+                Precio Pactado (CLP) <span className="text-rose-500 font-extrabold">*</span>
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 font-semibold text-xs">$</span>
@@ -320,7 +320,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
               </label>
               <div className="bg-[#121412] rounded-lg p-3 border border-neutral-700 flex justify-between items-center min-h-[46px]">
                 <span className="text-[10px] text-neutral-400 uppercase font-sans font-semibold">Cálculo automático</span>
-                <span className="text-sm font-headline font-bold text-[#b2ceb4]">${calculatedSubtotal.toFixed(2)}</span>
+                <span className="text-sm font-headline font-bold text-[#b2ceb4]">${Math.round(calculatedSubtotal).toLocaleString("es-CL")}</span>
               </div>
             </div>
           </div>
