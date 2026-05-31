@@ -56,3 +56,25 @@ body {
   border-color: rgba(244, 63, 94, 0.4) !important;
   border-top: 4px solid #facc15 !important; /* Alerta de Aseo Express */
 }
+
+/* Custom Bell Icon Ringing Vibration Animation */
+@keyframes bell-ring {
+  0%, 100% { transform: rotate(0); }
+  10%, 30%, 50%, 70%, 90% { transform: rotate(15deg); }
+  20%, 40%, 60%, 80% { transform: rotate(-15deg); }
+}
+
+.animate-bell-ring {
+  animation: bell-ring 1.8s ease-in-out infinite;
+  transform-origin: top center;
+}
+
+/* Premium Splash Screen Shimmer Progress Bar Animation */
+@keyframes shimmer-bar {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer-bar {
+  animation: shimmer-bar 1.5s ease-in-out infinite;
+}

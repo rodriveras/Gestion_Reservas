@@ -77,6 +77,7 @@ export default function Login({
         transition={{ duration: 0.5, ease: "easeOut" }}
         className="w-[90%] max-w-[430px] bg-[#0c0e0c]/85 border border-white/5 backdrop-blur-md rounded-2xl md:rounded-3xl p-6 md:p-8 shadow-[0_0_50px_rgba(0,0,0,0.8)] z-20 relative space-y-6 md:space-y-8"
       >
+
         {/* Card Header (Logo + Brand Name) */}
         <div className="text-center space-y-2.5">
           <div className="mx-auto w-12 h-12 rounded-full bg-[#3c4a3e]/30 border border-[#b2ceb4]/20 flex items-center justify-center shadow-lg">

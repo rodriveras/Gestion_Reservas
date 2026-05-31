@@ -113,8 +113,25 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
   };
 
 
+  const formatToDDMMYY = (dateStr: string) => {
+    if (!dateStr) return "";
+    const parts = dateStr.split("T")[0].split("-");
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
+    }
+    return dateStr;
+  };
+
+  const getTodayFormatted = () => {
+    const today = new Date();
+    const year2 = String(today.getFullYear()).slice(-2);
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    return `${day}/${month}/${year2}`;
+  };
+
   const autoId = `CLI-2026-${Math.floor(10000 + Math.random() * 90000)}`;
-  const fechaRegistro = new Date().toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" });
+  const fechaRegistro = getTodayFormatted();
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -494,9 +511,9 @@ export default function ClientForm({ clientes = [], onSave, onBack }: ClientForm
               </p>
               <p className="text-sm font-sans font-bold text-[#f6bb89] mt-0.5">
                 {isEditingState && selectedClientId
-                  ? new Date(
+                  ? formatToDDMMYY(
                       clientes.find((c) => c.id === selectedClientId)?.fechaRegistro || ""
-                    ).toLocaleDateString("es-ES", { day: "numeric", month: "long", year: "numeric" })
+                    )
                   : fechaRegistro}
               </p>
             </div>

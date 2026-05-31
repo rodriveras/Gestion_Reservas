@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { Trees, User, Bell, HelpCircle, Shield, Briefcase, ChevronRight, Cloud, CloudOff, RefreshCw, Calendar, Settings, Home, LogOut, Smartphone, Monitor } from "lucide-react";
+import { Trees, User, Bell, HelpCircle, Shield, Briefcase, ChevronRight, Cloud, CloudOff, RefreshCw, Calendar, Settings, Home, LogOut, Smartphone, Monitor, AlertTriangle, Wrench } from "lucide-react";
 
 // Types and Seed lists
 import {
@@ -36,6 +36,7 @@ import ServiceContractForm from "./components/ServiceContractForm";
 import GuestView from "./components/GuestView";
 import Login from "./components/Login";
 import ConfigModal from "./components/ConfigModal";
+import SplashScreen from "./components/SplashScreen";
 
 const getInitials = (userStr: string) => {
   if (!userStr) return "A";
@@ -147,8 +148,30 @@ export default function App() {
   const [sheetsActive, setSheetsActive] = useState<boolean>(isSheetsConfigured());
 
   // Navigation Screen Name
-  const [currentScreen, setCurrentScreen] = useState<string>("admin");
+  const [currentScreen, setCurrentScreen] = useState<string>(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("view") === "guest" ? "guest" : "admin";
+  });
   const [lastScreen, setLastScreen] = useState<string>("admin");
+
+  // Automated Splash Screen State Engine
+  const [showSplash, setShowSplash] = useState<boolean>(true);
+  const [isSplashFading, setIsSplashFading] = useState<boolean>(false);
+
+  useEffect(() => {
+    const fadeTimeout = setTimeout(() => {
+      setIsSplashFading(true);
+    }, 2200);
+
+    const removeTimeout = setTimeout(() => {
+      setShowSplash(false);
+    }, 2900);
+
+    return () => {
+      clearTimeout(fadeTimeout);
+      clearTimeout(removeTimeout);
+    };
+  }, []);
 
   // Configuration UI States
   const [isConfigOpen, setIsConfigOpen] = useState<boolean>(false);
@@ -181,6 +204,73 @@ export default function App() {
       setLastScreen(screen);
     }
     setCurrentScreen(screen);
+  };
+
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+
+  const formatToDDMMYY = (dateStr: string) => {
+    if (!dateStr) return "";
+    const parts = dateStr.split("T")[0].split("-");
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
+    }
+    return dateStr;
+  };
+
+  const getProximityAlerts = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const safeReservas = reservas || [];
+    const safeClientes = clientes || [];
+    const safeCabanas = cabanas || [];
+
+    return safeReservas
+      .filter((r) => {
+        if (!r || !r.checkIn || r.estadoReserva === "Cancelada") return false;
+        
+        const checkInDate = new Date(`${r.checkIn}T00:00:00`);
+        if (isNaN(checkInDate.getTime())) return false;
+        
+        // Calculate diff in days
+        const diffTime = checkInDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        
+        // Match: check-in is today, tomorrow, or in 2 days (0, 1, or 2 days away)
+        return diffDays >= 0 && diffDays <= 2;
+      })
+      .map((r) => {
+        const client = safeClientes.find((c) => c.id === r.clienteId);
+        const cabana = safeCabanas.find((c) => c.id === r.cabanaId) || { nombre: "Cabaña" };
+        
+        let clienteNombre = "Invitado";
+        if (client) {
+          const nombre = client.nombre ? client.nombre.trim() : "";
+          const apellidoLower = client.apellido ? client.apellido.trim().toLowerCase() : "";
+          const isPlaceholder = apellidoLower === "" || apellidoLower === "anónimo" || apellidoLower === "sin apellido";
+          const apellido = isPlaceholder ? "" : client.apellido.trim();
+          clienteNombre = apellido ? `${nombre} ${apellido}` : nombre || "Invitado";
+        }
+        
+        const checkInDate = new Date(`${r.checkIn}T00:00:00`);
+        const diffTime = checkInDate.getTime() - today.getTime();
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+        let countdownText = "";
+        if (diffDays === 0) countdownText = "¡Entrada hoy!";
+        else if (diffDays === 1) countdownText = "Entrada mañana";
+        else countdownText = `Entrada en ${diffDays} días`;
+
+        return {
+          id: r.id,
+          clienteNombre,
+          cabanaNombre: cabana.nombre,
+          fechaCheckIn: r.checkIn,
+          diasRestantes: diffDays,
+          countdownText,
+        };
+      })
+      .sort((a, b) => a.diasRestantes - b.diasRestantes);
   };
 
   // Synchronizers (Local Backup)
@@ -466,15 +556,23 @@ export default function App() {
     const sheetsComplexName = administracion[0]?.Nombre_complejo || "Entre Nieves";
 
     return (
-      <Login
-        expectedUser={sheetsAdminUser}
-        expectedPassword={sheetsAdminPass}
-        complexName={sheetsComplexName}
-        onLoginSuccess={() => {
-          setIsAuthenticated(true);
-          navigateTo("admin");
-        }}
-      />
+      <>
+        <Login
+          expectedUser={sheetsAdminUser}
+          expectedPassword={sheetsAdminPass}
+          complexName={sheetsComplexName}
+          onLoginSuccess={() => {
+            setIsAuthenticated(true);
+            navigateTo("admin");
+          }}
+        />
+        {showSplash && (
+          <SplashScreen
+            complexName={administracion[0]?.Nombre_complejo || "Cabañas Entre Nieves"}
+            isFading={isSplashFading}
+          />
+        )}
+      </>
     );
   }
 
@@ -528,10 +626,107 @@ export default function App() {
 
           {/* Profiles navigation items */}
           <div className="flex items-center gap-4">
-            <button className="relative p-2 text-neutral-400 hover:text-white transition-colors duration-200">
-              <Bell className="w-5 h-5 text-[#b2ceb4]" />
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#f6bb89] rounded-full"></span>
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className={`relative p-2 rounded-lg transition-all duration-250 cursor-pointer flex items-center justify-center ${
+                  isNotificationsOpen 
+                    ? "bg-[#4a634e]/20 text-white" 
+                    : "text-neutral-400 hover:text-white hover:bg-neutral-800/40"
+                }`}
+                title="Notificaciones de Check-in"
+              >
+                <Bell className={`w-5 h-5 ${getProximityAlerts().length > 0 ? "animate-bell-ring text-rose-400" : "text-[#b2ceb4]"}`} />
+                {getProximityAlerts().length > 0 && (
+                  <span className="absolute top-1 right-1 bg-rose-500 text-white font-extrabold text-[8px] leading-none w-4 h-4 rounded-full flex items-center justify-center border border-[#1b1e1b] shadow-md">
+                    {getProximityAlerts().length}
+                  </span>
+                )}
+              </button>
+
+              {isNotificationsOpen && (
+                <>
+                  {/* Invisible overlay background to close on click outside */}
+                  <div 
+                    className="fixed inset-0 z-45" 
+                    onClick={() => setIsNotificationsOpen(false)}
+                  />
+                  
+                  {/* Notifications Popover Dropdown Container */}
+                  <div className="absolute right-0 mt-3 w-[290px] bg-[#161916]/98 backdrop-blur-md border border-neutral-850 shadow-2xl rounded-2xl p-3.5 z-50 text-left space-y-3 shadow-black/50 animate-fade-in">
+                    <div className="flex items-center justify-between pb-1.5 border-b border-neutral-800/80">
+                      <div className="flex items-center gap-2">
+                        <Bell className="w-3.5 h-3.5 text-[#f6bb89] animate-pulse" />
+                        <h4 className="text-[11px] font-sans font-black uppercase tracking-wider text-neutral-100">
+                          Alertas de Check-In
+                        </h4>
+                      </div>
+                      {getProximityAlerts().length > 0 && (
+                        <span className="px-2 py-0.5 rounded-full text-[8px] font-sans font-black bg-rose-500/10 text-rose-400 uppercase tracking-widest animate-pulse">
+                          {getProximityAlerts().length} Próximos
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="max-h-[220px] overflow-y-auto space-y-2 pr-1 scrollbar-thin scrollbar-thumb-neutral-800">
+                      {getProximityAlerts().length === 0 ? (
+                        <div className="text-center py-6 text-neutral-500 space-y-1.5">
+                          <Bell className="w-6 h-6 text-neutral-600 mx-auto opacity-35" />
+                          <p className="text-[10px] font-sans text-neutral-400">No hay alertas de check-in próximas.</p>
+                        </div>
+                      ) : (
+                        getProximityAlerts().map((alert) => (
+                          <div
+                            key={alert.id}
+                            onClick={() => {
+                              setViewBookingId(alert.id);
+                              setCurrentScreen("new-booking");
+                              setIsNotificationsOpen(false);
+                            }}
+                            className="bg-[#1c1f1c]/40 hover:bg-[#222722]/80 active:bg-[#181b18] py-2.5 px-3 rounded-xl transition-all cursor-pointer group relative overflow-hidden flex flex-col gap-1.5"
+                          >
+                            {/* Proximity left vertical color accent based on remaining days */}
+                            <div className={`absolute left-0 top-0 bottom-0 w-1 rounded-l-xl ${
+                              alert.diasRestantes === 0 ? "bg-rose-500" : alert.diasRestantes === 1 ? "bg-[#f6bb89]" : "bg-emerald-500"
+                            }`}></div>
+
+                            {/* Top row: Passenger Name & Countdown Badge */}
+                            <div className="flex items-center justify-between pl-1.5 gap-2">
+                              <h5 className="text-[11px] font-sans font-bold text-neutral-100 group-hover:text-[#b2ceb4] transition-colors truncate max-w-[155px]">
+                                {alert.clienteNombre}
+                              </h5>
+                              <span className={`px-2 py-0.5 rounded-full text-[8.5px] font-sans font-extrabold uppercase tracking-wider shrink-0 ${
+                                alert.diasRestantes === 0 
+                                  ? "bg-rose-500/15 text-rose-400 animate-pulse" 
+                                  : alert.diasRestantes === 1
+                                    ? "bg-[#f6bb89]/15 text-[#f6bb89]"
+                                    : "bg-emerald-500/15 text-emerald-400"
+                              }`}>
+                                {alert.countdownText.replace("Entrada ", "").replace("¡Entrada ", "¡")}
+                              </span>
+                            </div>
+
+                            {/* Bottom row: Cabin name and Check-in Date */}
+                            <div className="flex items-center justify-between pl-1.5 text-[9px] mt-0.5">
+                              <div className="flex items-center gap-1 text-neutral-400 font-medium min-w-0">
+                                <Home className="w-3 h-3 text-[#b2ceb4]/60 shrink-0" />
+                                <span className="group-hover:text-neutral-200 transition-colors truncate max-w-[100px]">
+                                  {alert.cabanaNombre}
+                                </span>
+                              </div>
+                              <div className="flex items-center gap-1 font-bold text-[#f6bb89]/90 shrink-0">
+                                <Calendar className="w-3 h-3 text-[#f6bb89]/60" />
+                                <span>{formatToDDMMYY(alert.fechaCheckIn)}</span>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* User profile initials avatar */}
             <div className="flex items-center gap-2">
@@ -676,6 +871,7 @@ export default function App() {
               window.history.replaceState({}, document.title, window.location.pathname);
               navigateTo("admin");
             }}
+            onBackToWelcome={() => navigateTo("welcome")}
             complexConfig={administracion[0]}
           />
         )}
@@ -842,6 +1038,13 @@ export default function App() {
         config={administracion[0]}
         onSave={handleSaveConfig}
       />
+
+      {showSplash && (
+        <SplashScreen
+          complexName={administracion[0]?.Nombre_complejo || "Cabañas Entre Nieves"}
+          isFading={isSplashFading}
+        />
+      )}
     </div>
   );
 }

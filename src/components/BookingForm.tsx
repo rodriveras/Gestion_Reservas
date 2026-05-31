@@ -156,7 +156,7 @@ export default function BookingForm({
       const year2 = parts[0].slice(-2); // Last 2 digits of the year (e.g., "2026" -> "26")
       const month = parts[1];
       const day = parts[2];
-      return `${year2}/${month}/${day}`;
+      return `${day}/${month}/${year2}`;
     }
     return dateStr;
   };

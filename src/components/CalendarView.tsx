@@ -48,6 +48,14 @@ export default function CalendarView({
   const [amountToPay, setAmountToPay] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<"Efectivo" | "Tarjeta" | "Transferencia">("Transferencia");
   const [isPaymentFormOpen, setIsPaymentFormOpen] = useState<boolean>(false);
+  const formatToDDMMYY = (dateStr: string) => {
+    if (!dateStr) return "";
+    const parts = dateStr.split("T")[0].split("-");
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0].slice(-2)}`;
+    }
+    return dateStr;
+  };
 
   const isPastDay = (dayNumber: number) => {
     const today = new Date();
@@ -98,10 +106,7 @@ export default function CalendarView({
       const client = safeClientes.find((c) => c && c.id === r.clienteId) || { nombre: "Invitado", apellido: "Anónimo" };
       const cabana = safeCabanas.find((c) => c && c.id === r.cabanaId) || { nombre: "Cabaña Desconocida" };
       
-      const rawDate = parseLocalDate(r.checkIn);
-      const dateText = isNaN(rawDate.getTime()) 
-        ? "Fecha Inválida" 
-        : rawDate.toLocaleDateString("es-ES", { day: "numeric", month: "short" });
+      const dateText = `${formatToDDMMYY(r.checkIn)} al ${formatToDDMMYY(r.checkOut)}`;
 
       // Find services contracted for this reservation
       const bookingServices = contrataciones.filter((c) => c.reservaId === r.id);
