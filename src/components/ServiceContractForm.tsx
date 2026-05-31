@@ -93,6 +93,16 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
       return;
     }
 
+    if (parsedPrice < 0) {
+      alert("Error: El precio pactado no puede ser negativo.");
+      return;
+    }
+
+    if (parsedQty < 1) {
+      alert("Error: La cantidad debe ser al menos 1.");
+      return;
+    }
+
     const newContractValue: ContratacionServicio = {
       id: autoId,
       reservaId,
@@ -134,7 +144,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
       <form onSubmit={handleSubmit} className="space-y-6 pb-20">
         {/* Section 1: Detalles del Servicio */}
         <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-          <h3 className="text-sm font-sans font-bold text-neutral-100 flex flex-col md:flex-row md:items-center justify-between gap-2 pb-2 border-b border-neutral-850">
+          <h3 className="text-sm font-sans font-bold text-neutral-100 flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
             <div className="flex items-center gap-2">
               <LinkIcon className="w-4.5 h-4.5 text-[#f6bb89]" />
               <span>Detalles del Servicio</span>
@@ -145,9 +155,6 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Seleccionar Cliente (Auto filled or selected) */}
             <div className="space-y-1">
-              <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                Seleccionar Cliente
-              </label>
               <div className="relative">
                 <select
                   required
@@ -173,9 +180,6 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
 
             {/* Select Reserva ID */}
             <div className="space-y-1">
-              <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                IDE Reserva Cabaña
-              </label>
               <div className="relative">
                 <select
                   required
@@ -196,7 +200,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
                       );
                     })}
                 </select>
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-550 text-sm">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-555 text-sm">
                   confirmation_number
                 </span>
                 <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
@@ -207,11 +211,8 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
 
             {/* Seleccionar Servicio */}
             <div className="space-y-1">
-              <div className="flex items-center justify-between">
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                  Seleccionar Servicio
-                </label>
-                {selectedServiceObj && selectedServiceObj.estado !== "Activo" && (
+              {selectedServiceObj && selectedServiceObj.estado !== "Activo" && (
+                <div className="flex justify-end mb-1">
                   <button
                     type="button"
                     onClick={() => alert(`Advertencia: El servicio "${selectedServiceObj.nombre}" tiene estado "${selectedServiceObj.estado}". Solo los servicios en estado "Activo" se pueden contratar.`)}
@@ -219,8 +220,8 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
                   >
                     <span>⚠️ No Activo ({selectedServiceObj.estado})</span>
                   </button>
-                )}
-              </div>
+                </div>
+              )}
               <div className="relative">
                 <select
                   required
@@ -248,7 +249,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
 
         {/* Section 2: Condiciones y Valores */}
         <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-          <h3 className="text-sm font-sans font-bold text-neutral-100 flex items-center gap-2 pb-2 border-b border-neutral-850">
+          <h3 className="text-sm font-sans font-bold text-neutral-100 flex items-center gap-2 mb-4">
             <span className="material-symbols-outlined text-[#f6bb89] font-bold">payments</span>
             Condiciones y Valores
           </h3>
@@ -278,9 +279,15 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
                 <input
                   type="number"
                   required
+                  min="0"
                   placeholder="0.00"
                   value={precioPactado}
-                  onChange={(e) => setPrecioPactado(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || Number(val) >= 0) {
+                      setPrecioPactado(val);
+                    }
+                  }}
                   className="w-full pl-6 pr-4 bg-[#121412] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs outline-none font-bold"
                 />
               </div>
@@ -294,9 +301,14 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
               <input
                 type="number"
                 required
-                min={1}
+                min="1"
                 value={cantidad}
-                onChange={(e) => setCantidad(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "" || Number(val) >= 1) {
+                    setCantidad(val);
+                  }
+                }}
                 className="w-full bg-[#121412] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-bold outline-none"
               />
             </div>
@@ -316,16 +328,13 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
 
         {/* Section 3: Estado y Pago */}
         <section className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-          <h3 className="text-sm font-sans font-bold text-neutral-100 flex items-center gap-2 pb-2 border-b border-neutral-850">
+          <h3 className="text-sm font-sans font-bold text-neutral-100 flex items-center gap-2 mb-4">
             <span className="material-symbols-outlined text-[#f6bb89] font-bold">verified_user</span>
             Estado y Pago
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
-                Estado del Pago
-              </label>
               <div className="relative">
                 <select
                   value={estadoPago}
@@ -342,9 +351,6 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
             </div>
 
             <div>
-              <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
-                Medio de Pago
-              </label>
               <div className="relative">
                 <select
                   value={medioPago}

@@ -75,7 +75,7 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
       className="space-y-6"
     >
       {/* Header text */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-2 border-b border-neutral-900">
+      <div className="flex flex-row items-center justify-between gap-4 flex-wrap pb-2 border-b border-neutral-900">
         <div>
           <button
             onClick={onBack}
@@ -90,7 +90,7 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
         </div>
         {/* Edit Service button and selector moved to the right */}
         {servicios && servicios.length > 0 && (
-          <div className="flex items-center gap-3 self-start md:self-auto">
+          <div className="flex items-center gap-3 shrink-0">
             <button
               type="button"
               onClick={() => {

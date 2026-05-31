@@ -405,11 +405,24 @@ export default function App() {
   };
 
   const handleDeleteBooking = async (bookingId: string) => {
+    // 1. Local state updates (Optimistic UI)
     setReservas((prev) => prev.filter((r) => r.id !== bookingId));
+    
+    // Find all service contracts linked to this reservation to delete them as well
+    const associatedContracts = contrataciones.filter((c) => c.reservaId === bookingId);
+    setContrataciones((prev) => prev.filter((c) => c.reservaId !== bookingId));
     
     setIsSyncing(true);
     setSyncStatus("loading");
+    
+    // 2. Google Sheets sync
     const success = await sheetsService.deleteRecord("reservas", bookingId);
+    
+    // Perform cloud deletion of all linked contracts
+    for (const contract of associatedContracts) {
+      await sheetsService.deleteRecord("contrataciones", contract.id);
+    }
+    
     setSyncStatus(success ? "success" : "error");
     setIsSyncing(false);
     setTimeout(() => setSyncStatus("idle"), 3000);
@@ -755,7 +768,21 @@ export default function App() {
                     className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[#252925] text-neutral-300 hover:text-white transition-all text-xs font-sans font-semibold cursor-pointer text-left"
                   >
                     <div className="w-6 h-6 rounded-lg bg-[#4a634e]/20 text-[#b2ceb4] flex items-center justify-center">
-                      <Settings className="w-3.5 h-3.5" />
+                      <svg 
+                        viewBox="0 0 24 24" 
+                        className="w-3.5 h-3.5"
+                        stroke="currentColor"
+                        strokeWidth="2" 
+                        strokeLinecap="round" 
+                        strokeLinejoin="round"
+                        fill="none"
+                      >
+                        <path d="M7 2c.3-.8.7-.8.9 0s.7.8.9 0M12 2c.3-.8.7-.8.9 0s.7.8.9 0M17 2c.3-.8.7-.8.9 0s.7.8.9 0" />
+                        <path d="M4 8h16v11a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8z" />
+                        <path d="M4 11c1.5-.4 2.5-.4 4 0s2.5 .4 4 0 2.5-.4 4 0 1.5 0 2 0" />
+                        <path d="M8 8v14M12 8v14M16 8v14" />
+                        <path d="M4 13h16M4 18h16" />
+                      </svg>
                     </div>
                     Nuevo Servicio
                   </button>

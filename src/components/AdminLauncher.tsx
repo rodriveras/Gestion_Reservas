@@ -99,7 +99,20 @@ export default function AdminLauncher({
               className="w-full py-3 bg-transparent border border-white/20 hover:bg-white/5 hover:border-white/30 text-white rounded-full transition-all cursor-pointer flex items-center justify-center active:scale-95"
               title="Contratar Servicio"
             >
-              <span className="material-symbols-outlined text-xl leading-none">hot_tub</span>
+              <svg 
+                viewBox="0 0 24 24" 
+                className="w-5 h-5 text-white fill-white/10 shrink-0"
+                stroke="currentColor"
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
+              >
+                <path d="M7 2c.3-.8.7-.8.9 0s.7.8.9 0M12 2c.3-.8.7-.8.9 0s.7.8.9 0M17 2c.3-.8.7-.8.9 0s.7.8.9 0" />
+                <path d="M4 8h16v11a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8z" />
+                <path d="M4 11c1.5-.4 2.5-.4 4 0s2.5 .4 4 0 2.5-.4 4 0 1.5 0 2 0" />
+                <path d="M8 8v14M12 8v14M16 8v14" />
+                <path d="M4 13h16M4 18h16" />
+              </svg>
             </button>
           </div>
         </div>

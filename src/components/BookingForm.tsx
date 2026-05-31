@@ -104,8 +104,11 @@ export default function BookingForm({
   // Deposit validation
   const hasDepositError = !!(Number(montoTotal) > 0 && Number(montoAnticipo) >= Number(montoTotal) && estadoReserva !== "Pagada");
 
+  // Negative or zero amount validation
+  const hasAmountValidationError = Number(montoTotal) <= 0 || Number(montoAnticipo) < 0;
+
   // Form disable logic
-  const isFormDisabled = isClientBlockedOrSuspended || isCabinNotAvailable || hasDateError || exceedsCapacity || hasDepositError;
+  const isFormDisabled = isClientBlockedOrSuspended || isCabinNotAvailable || hasDateError || exceedsCapacity || hasDepositError || hasAmountValidationError;
 
   // Automatically adjust booking date calendar view month if fechaReserva changes
   useEffect(() => {
@@ -496,6 +499,11 @@ export default function BookingForm({
       return;
     }
 
+    if (hasAmountValidationError) {
+      alert("Error: El monto total debe ser mayor que 0 y el abono no puede ser negativo.");
+      return;
+    }
+
     const newBooking: Reserva = {
       id: bookingId,
       clienteId,
@@ -540,7 +548,7 @@ export default function BookingForm({
 
         <div className="bg-[#1b1e1b] px-4 py-2.5 rounded-xl border border-neutral-800 flex items-center gap-3">
           <span className="text-neutral-400 font-sans text-xs font-bold uppercase tracking-wider">
-            ID DE RESERVA:
+            ID RES:
           </span>
           <span className="text-[#f6bb89] font-sans font-bold text-sm tracking-widest">{bookingId}</span>
         </div>
@@ -549,11 +557,16 @@ export default function BookingForm({
       <form onSubmit={handleSubmit} className="space-y-6 pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Section: Customer & Unit selection */}
-          <div className="lg:col-span-7 bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-            <h3 className="text-sm font-sans font-bold text-neutral-100 pb-2 border-b border-neutral-850 flex flex-col md:flex-row md:items-center justify-between gap-2">
+          <div className="lg:col-span-7 bg-[#242924] rounded-xl p-6 border border-neutral-800/80 shadow-xl space-y-6">
+            <h3 className="text-sm font-sans font-bold text-neutral-100 flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#f6bb89]" />
-                <span>Cliente y Unidad</span>
+                <span className="material-symbols-outlined text-[#f6bb89] text-lg">contact_page</span>
+                <span>Ficha de Contacto</span>
+                {selectedClientObj && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-sans font-extrabold bg-[#b2ceb4]/10 text-[#b2ceb4] border border-[#b2ceb4]/25 uppercase tracking-wider ml-1">
+                    {selectedClientObj.estado}
+                  </span>
+                )}
               </div>
               <div className="flex flex-col items-end gap-1.5">
                 {isClientBlockedOrSuspended && (
@@ -585,154 +598,240 @@ export default function BookingForm({
                     ⚠️ El abono debe ser menor que el monto total
                   </span>
                 )}
+                {hasAmountValidationError && (
+                  <span className="text-[10px] font-sans font-bold bg-red-950/45 text-red-400 border border-red-900/40 px-3 py-1 rounded-full animate-pulse shadow-md shadow-red-950/20 block text-right">
+                    ⚠️ El monto total debe ser mayor que 0 y el abono no negativo
+                  </span>
+                )}
               </div>
             </h3>
 
             <div className="space-y-5">
               {/* Select guest */}
-              <div className="space-y-1">
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                  Seleccionar Cliente
-                </label>
-                <div className="flex gap-2">
-                  <div className="relative flex-grow">
-                    <select
-                      required
-                      value={clienteId}
-                      onChange={(e) => setClienteId(e.target.value)}
-                      disabled={!isEditMode || !!viewBookingId}
-                      className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
-                    >
-                      <option value="">Buscar un cliente existente...</option>
-                      {clientes.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.nombre} {c.apellido} — {c.numeroDocumento} {c.id === "CLI-2026-AUTO" ? "(AUTO)" : ""}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
-                      person
-                    </span>
-                    {isEditMode && !viewBookingId && (
-                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                        expand_more
+              {!viewBookingId && (
+                <div className="space-y-1">
+                  <div className="flex gap-2">
+                    <div className="relative flex-grow">
+                      <select
+                        required
+                        value={clienteId}
+                        onChange={(e) => setClienteId(e.target.value)}
+                        disabled={!isEditMode || !!viewBookingId}
+                        className="w-full pl-10 pr-10 bg-[#0b0c0b] text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-sans font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
+                      >
+                        <option value="">Buscar un cliente existente...</option>
+                        {clientes.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.nombre} {c.apellido} — {c.numeroDocumento} {c.id === "CLI-2026-AUTO" ? "(AUTO)" : ""}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
+                        person
                       </span>
-                    )}
-                  </div>
-                  {isEditMode && onCreateClient && (
-                    <button
-                      type="button"
-                      disabled={!!viewBookingId}
-                      onClick={!viewBookingId ? () => onCreateClient(cabanaId, entrada) : undefined}
-                      className="bg-[#4a634e] text-white px-2.5 md:px-4 rounded-lg font-sans font-bold text-[10px] md:text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1 md:gap-1.5 shrink-0 shadow-md border border-[#b2ceb4]/20 h-10 md:h-11 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100 disabled:active:scale-100 cursor-pointer"
-                      title={viewBookingId ? "No se puede registrar un nuevo cliente desde la consulta de reserva" : "Registrar nuevo cliente"}
-                    >
-                      <span className="material-symbols-outlined text-sm md:text-base">person_add</span>
-                      <span className="hidden sm:inline">Nuevo Cliente</span>
-                      <span className="inline sm:hidden">Nuevo</span>
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {/* Cabin & Booking date row */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-                <div className="space-y-1 md:col-span-2">
-                  <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                    Cabaña (Selección de Unidad)
-                  </label>
-                  <div className="relative">
-                    <select
-                      required
-                      value={cabanaId}
-                      onChange={(e) => setCabanaId(e.target.value)}
-                      disabled={!isEditMode || !!viewBookingId}
-                      className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed h-11"
-                    >
-                      <option value="">Elegir una propiedad...</option>
-                      {cabanas.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.nombre} (Capacidad: {c.capacidad} Pers.) — ${c.precioBase.toLocaleString("es-CL")}/Noche
-                        </option>
-                      ))}
-                    </select>
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
-                      cottage
-                    </span>
-                    {isEditMode && !viewBookingId && (
-                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                        expand_more
-                      </span>
+                      {isEditMode && !viewBookingId && (
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                          expand_more
+                        </span>
+                      )}
+                    </div>
+                    {isEditMode && onCreateClient && (
+                      <button
+                        type="button"
+                        disabled={!!viewBookingId}
+                        onClick={!viewBookingId ? () => onCreateClient(cabanaId, entrada) : undefined}
+                        className="bg-[#4a634e] text-white px-2.5 md:px-4 rounded-lg font-sans font-bold text-[10px] md:text-xs uppercase tracking-wider hover:brightness-110 active:scale-95 transition-all flex items-center justify-center gap-1 md:gap-1.5 shrink-0 shadow-md border border-[#b2ceb4]/20 h-10 md:h-11 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:brightness-100 disabled:active:scale-100 cursor-pointer"
+                        title={viewBookingId ? "No se puede registrar un nuevo cliente desde la consulta de reserva" : "Registrar nuevo cliente"}
+                      >
+                        <span className="material-symbols-outlined text-sm md:text-base">person_add</span>
+                        <span className="hidden sm:inline">Nuevo Cliente</span>
+                        <span className="inline sm:hidden">Nuevo</span>
+                      </button>
                     )}
                   </div>
                 </div>
+              )}
 
-                <div className="space-y-1 relative">
-                  <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                    Fecha de Reserva
-                  </label>
-                  <div
-                    onClick={!viewBookingId ? toggleBookingDateCalendar : undefined}
-                    className={`p-3 bg-[#121412] border-l-4 border-[#b2ceb4] rounded-r-lg relative select-none hover:border-neutral-600 transition-all h-11 flex items-center justify-between ${
-                      viewBookingId ? "cursor-not-allowed opacity-75" : "cursor-pointer"
-                    }`}
-                    title={viewBookingId ? "No se puede modificar la fecha de reserva" : "Haga clic para seleccionar la fecha de reserva"}
-                  >
-                    <span className="text-xs font-bold text-neutral-200">
-                      {formatToYYMMDD(fechaReserva)}
-                    </span>
-                    <Calendar className="w-3.5 h-3.5 text-white" />
+              {/* Info del Cliente Seleccionado (Ficha de Contacto de Alto Contraste) */}
+              {selectedClientObj && (
+                <div className="bg-[#0b0c0b]/90 border border-neutral-800 rounded-xl p-5 space-y-4 mt-2 animate-in fade-in slide-in-from-top-1 duration-150 shadow-inner">
+
+
+                  {/* Section 1: Datos del Huésped */}
+                  <div className="space-y-3">
+                    <h5 className="text-[9px] font-sans font-extrabold text-[#b2ceb4]/60 uppercase tracking-widest">
+                      Datos del Huésped
+                    </h5>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans">
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase block tracking-wider">
+                          Nombre Completo
+                        </span>
+                        <span className="text-neutral-100 font-bold flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[13px] text-[#b2ceb4] leading-none">badge</span>
+                          {selectedClientObj.nombre} {selectedClientObj.apellido}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase block tracking-wider">
+                          Documento / RUT
+                        </span>
+                        <span className="text-neutral-200 font-semibold flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[13px] text-neutral-500 leading-none">assignment_ind</span>
+                          {selectedClientObj.numeroDocumento} ({selectedClientObj.tipoDocumento})
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase block tracking-wider">
+                          Teléfono / Fono
+                        </span>
+                        <span className="text-neutral-100 font-bold flex items-center gap-1.5">
+                          <span className="material-symbols-outlined text-[13px] text-[#f6bb89] leading-none">phone</span>
+                          {selectedClientObj.telefono}
+                        </span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase block tracking-wider">
+                          Correo Electrónico
+                        </span>
+                        <span className="text-neutral-200 font-semibold flex items-center gap-1.5 truncate">
+                          <span className="material-symbols-outlined text-[13px] text-neutral-500 leading-none">mail</span>
+                          <span className="truncate">{selectedClientObj.email}</span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Collapsible Calendar Grid Popover for Booking Date (Discreet absolute overlay) */}
-                  {isBookingDateCalendarExpanded && (
-                    <div className="absolute z-50 left-0 right-0 md:left-auto md:right-0 md:w-[320px] top-[64px] bg-[#121412] border border-neutral-800 rounded-xl shadow-2xl shadow-black/90 animate-in fade-in slide-in-from-top-2 duration-150">
-                      {renderBookingDateCalendar()}
+                  {/* Section 2: Datos de la Reserva (Only in viewBookingId mode) */}
+                  {viewBookingId && (
+                    <div className="space-y-3 pt-3.5 border-t border-neutral-850">
+                      <h5 className="text-[9px] font-sans font-extrabold text-[#b2ceb4]/60 uppercase tracking-widest">
+                        Asignación y Reserva
+                      </h5>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-sans">
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase block tracking-wider">
+                            Cabaña / Unidad
+                          </span>
+                          <span className="text-neutral-100 font-bold flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[13px] text-[#b2ceb4] leading-none">cottage</span>
+                            {selectedCabinObj?.nombre || "No especificada"}
+                          </span>
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase block tracking-wider">
+                            Fecha de Reserva
+                          </span>
+                          <span className="text-neutral-100 font-bold flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[13px] text-[#b2ceb4] leading-none">calendar_month</span>
+                            {formatToYYMMDD(fechaReserva)}
+                          </span>
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] font-sans font-bold text-[#b2ceb4] uppercase block tracking-wider">
+                            Duración Estadía
+                          </span>
+                          <span className="text-[#f6bb89] font-bold flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[13px] text-[#f6bb89] leading-none">schedule</span>
+                            {noches} {noches === 1 ? "Noche" : "Noches"}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>
-              </div>
+              )}
 
-              {/* Stay duration & Head count passengers counter */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                <div className="space-y-1">
-                  <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                    Cantidad de Días
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={noches}
-                      onChange={(e) => setNoches(Number(e.target.value))}
-                      disabled={!isEditMode || !!viewBookingId}
-                      className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed h-11"
-                    >
-                      {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
-                        <option key={n} value={n}>
-                          {n} {n === 1 ? "Día" : "Días"}
-                        </option>
-                      ))}
-                    </select>
-                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
-                      date_range
-                    </span>
-                    {isEditMode && !viewBookingId && (
-                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                        expand_more
+              {/* Cabin & Booking date row */}
+              {!viewBookingId && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                  <div className="space-y-1 md:col-span-2">
+                    <div className="relative">
+                      <select
+                        required
+                        value={cabanaId}
+                        onChange={(e) => setCabanaId(e.target.value)}
+                        disabled={!isEditMode || !!viewBookingId}
+                        className="w-full pl-10 pr-10 bg-[#0b0c0b] text-neutral-300 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-sans font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed h-11"
+                      >
+                        <option value="">Elegir una propiedad...</option>
+                        {cabanas.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.nombre} (Capacidad: {c.capacidad} Pers.) — ${c.precioBase.toLocaleString("es-CL")}/Noche
+                          </option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
+                        cottage
                       </span>
+                      {isEditMode && !viewBookingId && (
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                          expand_more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1 relative">
+                    <div
+                      onClick={!viewBookingId ? toggleBookingDateCalendar : undefined}
+                      className={`p-3 bg-[#0b0c0b] border-l-4 border-[#b2ceb4] rounded-r-lg relative select-none hover:border-neutral-600 transition-all h-11 flex items-center justify-between ${
+                        viewBookingId ? "cursor-not-allowed opacity-75" : "cursor-pointer"
+                      }`}
+                      title={viewBookingId ? "No se puede modificar la fecha de reserva" : "Haga clic para seleccionar la fecha de reserva"}
+                    >
+                      <span className="text-xs font-sans font-bold text-neutral-100">
+                        {formatToYYMMDD(fechaReserva)}
+                      </span>
+                      <Calendar className="w-3.5 h-3.5 text-white" />
+                    </div>
+
+                    {/* Collapsible Calendar Grid Popover for Booking Date (Discreet absolute overlay) */}
+                    {isBookingDateCalendarExpanded && (
+                      <div className="absolute z-50 left-0 right-0 md:left-auto md:right-0 md:w-[320px] top-[64px] bg-[#0b0c0b] border border-neutral-800 rounded-xl shadow-2xl shadow-black/90 animate-in fade-in slide-in-from-top-2 duration-150">
+                        {renderBookingDateCalendar()}
+                      </div>
                     )}
                   </div>
                 </div>
+              )}
 
-                <div className="space-y-1">
-                  <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                    Cantidad de Personas
-                  </label>
+              {/* Stay duration & Head count passengers counter */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                {!viewBookingId && (
+                  <div className="space-y-1">
+                    <div className="relative">
+                      <select
+                        value={noches}
+                        onChange={(e) => setNoches(Number(e.target.value))}
+                        disabled={!isEditMode || !!viewBookingId}
+                        className="w-full pl-10 pr-10 bg-[#0b0c0b] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-sans font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed h-11"
+                      >
+                        {Array.from({ length: 30 }, (_, i) => i + 1).map((n) => (
+                          <option key={n} value={n}>
+                            {n} {n === 1 ? "Día" : "Días"}
+                          </option>
+                        ))}
+                      </select>
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
+                        date_range
+                      </span>
+                      {isEditMode && !viewBookingId && (
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                          expand_more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className={`space-y-1 ${viewBookingId ? "md:col-span-2" : ""}`}>
                   <div className="relative">
                     <select
                       value={pasajeros}
                       onChange={(e) => setPasajeros(Number(e.target.value))}
                       disabled={!isEditMode}
-                      className="w-full pl-10 pr-10 bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-medium outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed h-11"
+                      className="w-full pl-10 pr-10 bg-[#0b0c0b] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-sans font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed h-11"
                     >
                       {Array.from({ length: 10 }, (_, i) => i + 1).map((p) => (
                         <option key={p} value={p}>
@@ -755,8 +854,8 @@ export default function BookingForm({
           </div>
 
           {/* Section: Stay Details */}
-          <div className="lg:col-span-5 bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-            <h3 className="text-sm font-sans font-bold text-neutral-100 pb-2 border-b border-neutral-850 flex items-center gap-2">
+          <div className="lg:col-span-5 bg-[#242924] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
+            <h3 className="text-sm font-sans font-bold text-neutral-100 flex items-center gap-2 mb-4">
               <Calendar className="w-5 h-5 text-[#f6bb89]" />
               Detalles de la Estadía
             </h3>
@@ -767,7 +866,7 @@ export default function BookingForm({
                   {/* Clickable ENTRADA trigger box */}
                   <div
                     onClick={!viewBookingId ? toggleStayCalendar : undefined}
-                    className={`p-3 bg-[#121412] border-l-4 border-[#f6bb89] rounded-r-lg relative select-none hover:border-neutral-600 transition-all ${
+                    className={`p-3 bg-[#0b0c0b] border-l-4 border-[#f6bb89] rounded-r-lg relative select-none hover:border-neutral-600 transition-all ${
                       viewBookingId ? "cursor-not-allowed opacity-75" : "cursor-pointer"
                     }`}
                     title={viewBookingId ? "No se puede modificar la fecha de entrada" : "Haga clic para seleccionar fechas en el calendario"}
@@ -784,7 +883,7 @@ export default function BookingForm({
                   {/* Clickable SALIDA trigger box */}
                   <div
                     onClick={!viewBookingId ? toggleStayCalendar : undefined}
-                    className={`p-3 bg-[#121412] border-l-4 border-[#f6bb89]/40 rounded-r-lg relative select-none hover:border-neutral-600 transition-all ${
+                    className={`p-3 bg-[#0b0c0b] border-l-4 border-[#f6bb89]/40 rounded-r-lg relative select-none hover:border-neutral-600 transition-all ${
                       viewBookingId ? "cursor-not-allowed opacity-75" : "cursor-pointer"
                     }`}
                     title={viewBookingId ? "No se puede modificar la fecha de salida" : "Haga clic para seleccionar fechas en el calendario"}
@@ -801,7 +900,7 @@ export default function BookingForm({
 
                 {/* Collapsible Calendar Grid Popover (Discreet absolute overlay) */}
                 {isCalendarExpanded && (
-                  <div className="absolute z-50 left-0 right-0 md:left-auto md:right-0 md:w-[320px] top-[74px] bg-[#121412] border border-neutral-800 rounded-xl shadow-2xl shadow-black/90 animate-in fade-in slide-in-from-top-2 duration-150">
+                  <div className="absolute z-50 left-0 right-0 md:left-auto md:right-0 md:w-[320px] top-[74px] bg-[#0b0c0b] border border-neutral-800 rounded-xl shadow-2xl shadow-black/90 animate-in fade-in slide-in-from-top-2 duration-150">
                     {renderMiniCalendar()}
                   </div>
                 )}
@@ -812,7 +911,7 @@ export default function BookingForm({
               <input type="hidden" name="checkOut" value={salida} />
 
               {/* Nights indicator pill block */}
-              <div className="flex items-center justify-center py-2.5 px-4 bg-[#121412] border border-neutral-800 rounded-full">
+              <div className="flex items-center justify-center py-2.5 px-4 bg-[#0b0c0b] border border-neutral-800 rounded-full">
                 <span className="text-xs text-neutral-400 font-sans font-medium">
                   Duración total:{" "}
                 </span>
@@ -823,15 +922,12 @@ export default function BookingForm({
 
               {/* Sales Channel */}
               <div className="space-y-1 pt-2">
-                <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-widest">
-                  Canal de Ventas
-                </label>
                 <div className="relative">
                   <select
                     value={canalVentas}
                     onChange={(e) => setCanalVentas(e.target.value as any)}
                     disabled={!isEditMode}
-                    className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
+                    className="w-full bg-[#0b0c0b] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-sans font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     <option value="Directo">Directo</option>
                     <option value="Airbnb">Airbnb</option>
@@ -853,8 +949,8 @@ export default function BookingForm({
         </div>
 
         {/* Section financial details */}
-        <div className="bg-[#1e201e] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-          <h4 className="text-sm font-sans font-bold text-neutral-100 pb-2 border-b border-neutral-850 flex items-center gap-2">
+        <div className="bg-[#242924] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
+          <h4 className="text-sm font-sans font-bold text-neutral-100 flex items-center gap-2 mb-4">
             <Landmark className="w-5 h-5 text-[#b2ceb4]" />
             Información Financiera
           </h4>
@@ -862,38 +958,50 @@ export default function BookingForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Monto Total */}
             <div className="space-y-1">
-              <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide">
-                Monto Total ($)
+              <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
+                MONTO TOTAL ($)
               </label>
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-[#b2ceb4] text-sm">$</span>
                 <input
                   type="number"
                   required
+                  min="1"
                   placeholder="0.00"
                   value={montoTotal}
-                  onChange={(e) => setMontoTotal(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || Number(val) >= 0) {
+                      setMontoTotal(val);
+                    }
+                  }}
                   disabled={!isEditMode}
-                  className="w-full pl-7 pr-4 bg-[#121412] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-sm font-bold outline-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="w-full pl-7 pr-4 bg-[#0b0c0b] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-sm font-sans font-bold outline-none disabled:opacity-75 disabled:cursor-not-allowed"
                 />
               </div>
             </div>
 
             {/* Monto Anticipo */}
             <div className="space-y-1">
-              <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide">
-                Abono ($)
+              <label className="block text-[10px] font-sans font-bold text-neutral-400 uppercase tracking-widest mb-1">
+                ABONO ($)
               </label>
               <div className="relative">
                 <span className={`absolute left-3 top-1/2 -translate-y-1/2 font-bold text-sm ${hasDepositError ? "text-red-400" : "text-neutral-500"}`}>$</span>
                 <input
                   type="number"
                   required
+                  min="0"
                   placeholder="0.00"
                   value={montoAnticipo}
-                  onChange={(e) => setMontoAnticipo(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "" || Number(val) >= 0) {
+                      setMontoAnticipo(val);
+                    }
+                  }}
                   disabled={!isEditMode}
-                  className={`w-full pl-7 pr-4 bg-[#121412] text-neutral-100 border rounded-lg p-3 text-sm font-bold outline-none disabled:opacity-75 disabled:cursor-not-allowed transition-colors ${
+                  className={`w-full pl-7 pr-4 bg-[#0b0c0b] text-neutral-100 border rounded-lg p-3 text-sm font-sans font-bold outline-none disabled:opacity-75 disabled:cursor-not-allowed transition-colors ${
                     hasDepositError ? "border-red-500 focus:border-red-500 text-red-200" : "border-neutral-700 focus:border-[#b2ceb4]"
                   }`}
                 />
@@ -907,15 +1015,12 @@ export default function BookingForm({
 
             {/* Estado Reserva */}
             <div className="space-y-1">
-              <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide">
-                Estado de Reserva
-              </label>
               <div className="relative">
                 <select
                   value={estadoReserva}
                   onChange={(e) => setEstadoReserva(e.target.value as any)}
                   disabled={true}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="w-full bg-[#0b0c0b] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-sans font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
                 >
                   <option value="Pendiente de Pago">Pendiente de Pago</option>
                   <option value="Pagada">Pagada</option>
@@ -926,15 +1031,12 @@ export default function BookingForm({
 
             {/* Método de Pago */}
             <div className="space-y-1">
-              <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide">
-                Método de Pago
-              </label>
               <div className="relative">
                 <select
                   value={metodoPago}
                   onChange={(e) => setMetodoPago(e.target.value as any)}
                   disabled={!isEditMode}
-                  className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
+                  className="w-full bg-[#0b0c0b] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-sans font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
                 >
                   <option value="Efectivo">Efectivo</option>
                   <option value="Tarjeta">Tarjeta</option>

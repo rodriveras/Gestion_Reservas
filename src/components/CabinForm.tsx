@@ -69,6 +69,11 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
     e.preventDefault();
     if (!nombre.trim()) return;
 
+    if (Number(precioBase) < 0) {
+      alert("Error: El precio base por noche no puede ser negativo.");
+      return;
+    }
+
     const targetId = isEditingState && selectedCabinId ? selectedCabinId : newCabinId;
 
     const newCabin: Cabana = {
@@ -108,7 +113,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
           <ArrowLeft className="w-4 h-4" />
           Volver
         </button>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-row items-center justify-between gap-4 flex-wrap">
           <h2 className="text-sm font-sans font-bold text-neutral-100">
             {isEditingState ? "Editar Cabaña" : "Nueva Cabaña"}
           </h2>
@@ -232,16 +237,22 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
               {/* Precio Base por Noche */}
               <div>
                 <label className="block text-xs font-sans font-bold text-neutral-400 uppercase tracking-wide mb-1.5">
-                  Precio Base por Noche (USD)
+                  Precio Base por Noche (CLP)
                 </label>
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#f6bb89] font-bold text-sm">$</span>
                   <input
                     type="number"
                     required
+                    min="0"
                     placeholder="0.00"
                     value={precioBase}
-                    onChange={(e) => setPrecioBase(e.target.value)}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "" || Number(val) >= 0) {
+                        setPrecioBase(val);
+                      }
+                    }}
                     className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 pl-7 text-sm outline-none transition-all"
                   />
                 </div>

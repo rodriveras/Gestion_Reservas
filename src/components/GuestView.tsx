@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { Calendar, ChevronLeft, ChevronRight, MessageSquare, Phone, LogOut, Check, X, ShieldAlert, Home, Share2 } from "lucide-react";
+import { Calendar, ChevronLeft, ChevronRight, MessageSquare, Phone, LogOut, Check, X, ShieldAlert, Home, Share2, PawPrint, MapPin } from "lucide-react";
 import { Cabana, Reserva, Administracion } from "../types";
 
 interface GuestViewProps {
@@ -24,6 +24,12 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin, isAdminLog
   const cleanWhatsapp = whatsappNum.replace(/[^0-9]/g, "");
   const whatsappLink = `https://wa.me/${cleanWhatsapp}`;
   const phoneLink = `tel:${telefonoNum.replace(/\s+/g, "")}`;
+
+  const defaultLat = -36.9157;
+  const defaultLng = -71.5010;
+  const targetLat = cabanas && cabanas.length > 0 ? (cabanas[0].lat || defaultLat) : defaultLat;
+  const targetLng = cabanas && cabanas.length > 0 ? (cabanas[0].lng || defaultLng) : defaultLng;
+  const mapsLink = `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}`;
 
   const [copied, setCopied] = useState(false);
 
@@ -179,8 +185,36 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin, isAdminLog
                 <div className="lg:col-span-8 p-6 md:p-8 space-y-6">
                   <div className="flex flex-col md:flex-row justify-between items-start gap-4">
                     <div className="flex-1">
-                      <h4 className="text-2xl font-headline font-semibold text-neutral-100">
+                      <h4 className="text-2xl font-headline font-semibold text-neutral-100 flex items-center gap-2">
                         {cab.nombre}
+                        {cab.descripcion && /mascota/i.test(cab.descripcion) && (
+                          <PawPrint 
+                            className="w-6.5 h-6.5 text-emerald-400 fill-emerald-400/15 shrink-0 transition-transform duration-300 hover:scale-110 cursor-help" 
+                            title="Pet Friendly / Se permiten mascotas" 
+                          />
+                        )}
+                        {cab.descripcion && /(tinaja|hot\s*tub)/i.test(cab.descripcion) && (
+                          <svg 
+                            viewBox="0 0 24 24" 
+                            className="w-6.5 h-6.5 text-cyan-400 fill-cyan-400/15 shrink-0 transition-transform duration-300 hover:scale-110 cursor-help"
+                            stroke="currentColor"
+                            strokeWidth="2" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round"
+                            title="Tinaja de agua caliente / Hot Tub disponible"
+                          >
+                            {/* Wavy steam lines rising */}
+                            <path d="M7 2c.3-.8.7-.8.9 0s.7.8.9 0M12 2c.3-.8.7-.8.9 0s.7.8.9 0M17 2c.3-.8.7-.8.9 0s.7.8.9 0" />
+                            {/* Hot tub barrel frame */}
+                            <path d="M4 8h16v11a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8z" />
+                            {/* Water surface waves inside the tub */}
+                            <path d="M4 11c1.5-.4 2.5-.4 4 0s2.5 .4 4 0 2.5-.4 4 0 1.5 0 2 0" />
+                            {/* Wooden barrel vertical staves */}
+                            <path d="M8 8v14M12 8v14M16 8v14" />
+                            {/* Horizontal metal binding bands */}
+                            <path d="M4 13h16M4 18h16" />
+                          </svg>
+                        )}
                       </h4>
                       <p className="text-xs text-neutral-200 mt-2 leading-relaxed font-sans font-normal">
                         {cab.descripcion}
@@ -334,6 +368,15 @@ export default function GuestView({ cabanas, reservas, onBackToAdmin, isAdminLog
             >
               <Phone className="w-4 h-4 animate-bounce shrink-0" />
               <span>Llamar</span>
+            </a>
+            <a
+              href={mapsLink}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 flex items-center justify-center gap-2 border border-[#4a85f6] text-[#8ab4f8] rounded-full px-4 py-2.5 hover:bg-[#4a85f6]/10 active:scale-95 transition-all font-sans text-xs font-bold uppercase tracking-wider cursor-pointer"
+            >
+              <MapPin className="w-4 h-4 shrink-0" />
+              <span>Cómo llegar</span>
             </a>
           </div>
         </div>

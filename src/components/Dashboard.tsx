@@ -5,7 +5,7 @@
 
 import { useState } from "react";
 import { motion } from "motion/react";
-import { DollarSign, Percent, Moon, CalendarDays, ArrowLeft, PieChart, BarChart3, TrendingUp } from "lucide-react";
+import { DollarSign, Percent, Moon, CalendarDays, ArrowLeft, PieChart, BarChart3, TrendingUp, Home } from "lucide-react";
 import { Cabana, Reserva, ContratacionServicio, Cliente } from "../types";
 
 // Helper to parse dates in local timezone to avoid UTC shifting bugs
@@ -46,7 +46,8 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
 
   const yearContrataciones = safeContrataciones.filter((c) => {
     const assocReserva = safeReservas.find(r => r.id === c.reservaId);
-    if (assocReserva && assocReserva.estadoReserva === "Cancelada") return false;
+    if (!assocReserva) return false; // Exclude orphaned contracts whose reservation has been deleted
+    if (assocReserva.estadoReserva === "Cancelada") return false;
 
     if (selectedYear === "Todos") return true;
     const dateStr = (c as any).fecha || (c as any).fechaContratacion;
@@ -74,67 +75,38 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
   // Total reservations based on the selected year
   const reservasTotalesCount = yearReservas.length;
 
-  // 2. Compute reservations per cabin for the Donut Chart based on the selected year
+  // 2. Compute reservations and income per cabin based on the selected year
   const cabinBookingCounts = safeCabanas.map((c) => {
-    const count = yearReservas.filter((r) => r.cabanaId === c.id).length;
+    const cabinReservas = yearReservas.filter((r) => r.cabanaId === c.id);
+    const count = cabinReservas.length;
+    const amount = cabinReservas.reduce((acc, r) => acc + r.montoTotal, 0);
     return {
       nombre: c.nombre,
       count,
+      amount,
     };
   });
-  const totalCabinBookings = cabinBookingCounts.reduce((acc, c) => acc + c.count, 0) || 1;
-
-  // Segment values for dynamic SVG arc
-  let accumulatedAngleCabin = 0;
-  const cabinDonutSegments = cabinBookingCounts.map((cb, idx) => {
-    const percentage = cb.count / totalCabinBookings;
-    const angle = percentage * 360;
-    const startAngle = accumulatedAngleCabin;
-    accumulatedAngleCabin += angle;
-
-    // Color assigned matching screenshots
-    const colors = ["#10b981", "#38bdf8", "#8b5cf6", "#2dd4bf", "#f59e0b"];
-    return {
-      ...cb,
-      percentage: Math.round(percentage * 100),
-      color: colors[idx % colors.length],
-      startAngle,
-      angle,
-    };
-  });
+  const totalCabinIncome = cabinBookingCounts.reduce((acc, c) => acc + c.amount, 0) || 1;
 
   // 3. Compute booking channels based on the selected year
   const channels = ["Airbnb", "Directo", "Booking", "Otros"] as const;
   const channelCounts = channels.map((chan) => {
-    const count = yearReservas.filter((r) => {
+    const channelReservas = yearReservas.filter((r) => {
       if (chan === "Otros") {
         return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
       }
       return r.canalVentas === chan;
-    }).length;
+    });
+    const count = channelReservas.length;
+    const amount = channelReservas.reduce((acc, r) => acc + r.montoTotal, 0);
     return {
       name: chan,
       count,
+      amount,
     };
   });
 
-  const totalChannelSales = channelCounts.reduce((acc, c) => acc + c.count, 0) || 1;
-  let accumulatedAngleChannel = 0;
-  const channelDonutSegments = channelCounts.map((ch, idx) => {
-    const percentage = ch.count / totalChannelSales;
-    const angle = percentage * 360;
-    const startAngle = accumulatedAngleChannel;
-    accumulatedAngleChannel += angle;
-
-    const colors = ["#818cf8", "#34d399", "#22d3ee", "#9ca3af"];
-    return {
-      ...ch,
-      percentage: Math.round(percentage * 100),
-      color: colors[idx % colors.length],
-      startAngle,
-      angle,
-    };
-  });
+  const totalChannelIncome = channelCounts.reduce((acc, c) => acc + c.amount, 0) || 1;
 
   const selectedCabinReservations = selectedCabinSegment
     ? yearReservas.filter((r) => {
@@ -345,173 +317,91 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
         </div>
       </section>
 
-      {/* Two Columns with Donuts charts */}
+      {/* Two Columns with charts */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Chart 1: Reservas por Cabaña */}
-        <div className="bg-[#1b1e1b] rounded-xl border border-neutral-800/40 border-t-2 border-[#D29B6C] p-6 shadow-xl space-y-6">
-          <div className="flex items-center gap-2 pb-2 border-b border-neutral-900">
-            <PieChart className="w-5 h-5 text-emerald-400" />
+        <div className="bg-[#1b1e1b] rounded-xl border border-neutral-800/40 border-t-2 border-[#D29B6C] p-4.5 shadow-xl space-y-3.5">
+          <div className="flex items-center gap-2 pb-1.5 border-b border-neutral-900/60">
+            <Home className="w-5 h-5 text-emerald-400" />
             <h3 className="text-sm font-sans font-bold text-neutral-100">
               Reservas Activas por cabañas
             </h3>
           </div>
-          <div className="flex flex-col items-center justify-center py-4">
-            <div className="relative w-56 h-56 flex items-center justify-center">
-              <svg className="w-full h-full" viewBox="0 0 100 100">
-                {/* Background ring */}
-                <circle
-                  className="text-neutral-850"
-                  cx="50"
-                  cy="50"
-                  fill="transparent"
-                  r="40"
-                  stroke="#262626"
-                  strokeWidth="18"
-                ></circle>
-                
-                {/* Render colored arcs */}
-                {cabinDonutSegments.map((seg, i) => {
-                  const dashArray = 2 * Math.PI * 40; // 251.3
-                  const strokeOffset = dashArray - (seg.angle / 360) * dashArray;
-                  const isSelected = selectedCabinSegment === seg.nombre;
-                  return (
-                    <g 
-                      key={seg.nombre} 
-                      className="cursor-pointer" 
-                      onClick={() => {
-                        setSelectedCabinSegment((prev) => (prev === seg.nombre ? null : seg.nombre));
-                      }}
-                    >
-                      {/* White outline border behind selected segment */}
-                      {isSelected && (
-                        <circle
-                          cx="50"
-                          cy="50"
-                          fill="transparent"
-                          r="40"
-                          stroke="#ffffff"
-                          strokeWidth="22"
-                          strokeDasharray={251.3}
-                          strokeDashoffset={strokeOffset}
-                          className="transition-all duration-300 ease-out pointer-events-none"
-                          transform={`rotate(${seg.startAngle - 90} 50 50)`}
-                        />
-                      )}
-                      {/* Colored arc segment */}
-                      <circle
-                        cx="50"
-                        cy="50"
-                        fill="transparent"
-                        r="40"
-                        stroke={seg.color}
-                        strokeWidth="18"
-                        strokeDasharray={251.3}
-                        strokeDashoffset={strokeOffset}
-                        className="transition-all duration-300 ease-out hover:brightness-110"
-                        transform={`rotate(${seg.startAngle - 90} 50 50)`}
-                      />
-                    </g>
-                  );
-                })}
-
-                {/* Render labels on top of the segments inside the wide ring */}
-                {cabinDonutSegments.map((seg) => {
-                  if (seg.count === 0) return null; // Skip slices with no bookings to prevent overlap
-                  const midAngle = seg.startAngle + seg.angle / 2 - 90;
-                  const angleRad = (midAngle * Math.PI) / 180;
-                  // Center of the ring is at radius 40
-                  const labelX = 50 + 40 * Math.cos(angleRad);
-                  const labelY = 50 + 40 * Math.sin(angleRad);
-
-                  const cabinLabel = seg.nombre.replace("Cabaña ", "").toUpperCase();
-
-                  return (
-                    <g 
-                      key={`label-${seg.nombre}`} 
-                      className="select-none pointer-events-none transition-all duration-300"
-                    >
-                      {/* Cabin Name with high-contrast outline halo */}
-                      <text
-                        x={labelX}
-                        y={labelY - 1.8}
-                        fill="#ffffff"
-                        fontSize="3.2"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        className="font-sans font-bold fill-white"
-                        stroke="#000000"
-                        strokeWidth="1.0"
-                        strokeLinejoin="round"
-                        paintOrder="stroke"
-                      >
-                        {cabinLabel}
-                      </text>
-                      {/* Count with high-contrast outline halo */}
-                      <text
-                        x={labelX}
-                        y={labelY + 2.4}
-                        fill="#ffffff"
-                        fontSize="4.2"
-                        fontWeight="black"
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        className="font-sans font-black fill-white"
-                        stroke="#000000"
-                        strokeWidth="1.4"
-                        strokeLinejoin="round"
-                        paintOrder="stroke"
-                      >
-                        {seg.count}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-              <div className="absolute text-center flex flex-col items-center justify-center pointer-events-none">
-                <span className="block font-sans text-xl font-bold text-white">
-                  {reservasTotalesCount}
-                </span>
-                <span className="block font-sans text-[10px] text-[#b2ceb4] uppercase tracking-widest font-semibold">
-                  Estadías
-                </span>
-              </div>
-            </div>
+          
+          <div className="space-y-2 py-0.5">
+            {[...cabinBookingCounts].sort((a, b) => b.amount - a.amount).map((seg) => {
+              const percentage = totalCabinIncome > 0 ? (seg.amount / totalCabinIncome) * 100 : 0;
+              const isSelected = selectedCabinSegment === seg.nombre;
+              return (
+                <div 
+                  key={seg.nombre} 
+                  className={`space-y-1 p-1.5 rounded-md transition-all duration-300 cursor-pointer ${
+                    isSelected ? 'bg-neutral-800/15 border border-neutral-800/40' : 'border border-transparent hover:bg-neutral-800/5'
+                  }`} 
+                  onClick={() => {
+                    setSelectedCabinSegment((prev) => (prev === seg.nombre ? null : seg.nombre));
+                  }}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-sans font-semibold text-neutral-200 transition-colors">
+                      {seg.nombre}
+                    </span>
+                    <div className="flex items-center gap-1.5 text-xs font-sans">
+                      <span className="text-[#2dd4bf] font-bold text-sm mr-1">
+                        {formatCurrency(seg.amount)}
+                      </span>
+                      <span className="text-neutral-500 font-medium">
+                        ({seg.count} {seg.count === 1 ? 'res.' : 'res.'})
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Progress Bar Track */}
+                  <div className="w-full h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800/20">
+                    {/* Progress Bar Fill */}
+                    <div 
+                      className="h-full rounded-full bg-gradient-to-r from-teal-600 to-cyan-400 shadow-[0_0_8px_rgba(45,212,191,0.2)] transition-all duration-500 ease-out"
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {selectedCabinSegment && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
-              className="mt-6 p-5 bg-[#121412] border border-neutral-800/80 rounded-xl relative overflow-hidden shadow-lg"
+              className="mt-4 p-4 bg-[#121412] border border-neutral-800/80 rounded-xl relative overflow-hidden shadow-lg"
             >
               {/* Decorative vertical colored stripe */}
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#10b981]"></div>
               
               <button
                 onClick={() => setSelectedCabinSegment(null)}
-                className="absolute top-3 right-3 text-neutral-500 hover:text-white text-xs cursor-pointer"
+                className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-white text-xs cursor-pointer"
                 title="Cerrar detalle"
               >
                 ✕
               </button>
               
-              <div className="pl-2 pr-4 flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-4">
+              <div className="pl-1 pr-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <span className="text-[10px] font-sans font-extrabold text-[#10b981] uppercase tracking-wider">
+                  <span className="text-[9px] font-sans font-extrabold text-[#10b981] uppercase tracking-wider">
                     Detalle de Cabaña
                   </span>
-                  <h4 className="text-xl font-headline font-bold text-white mt-1">
+                  <h4 className="text-lg font-headline font-bold text-white mt-0.5">
                     {selectedCabinSegment}
                   </h4>
                 </div>
                 
-                <div className="flex items-center gap-6 self-start sm:self-center">
+                <div className="flex items-center gap-4 self-start sm:self-center">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
+                    <span className="text-[9px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
                       RESERVAS ACTIVAS
                     </span>
-                    <span className="text-2xl font-sans font-black text-white mt-1">
+                    <span className="text-xl font-sans font-black text-white mt-0.5">
                       {yearReservas.filter((r) => {
                         const cab = safeCabanas.find((c) => c.nombre === selectedCabinSegment);
                         return cab && r.cabanaId === cab.id;
@@ -520,15 +410,35 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                   </div>
                   
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
-                      PORCENTAJE DE RESERVAS
+                    <span className="text-[9px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
+                      INGRESOS TOTALES
                     </span>
-                    <span className="text-2xl font-sans font-black text-[#10b981] mt-1">
+                    <span className="text-xl font-sans font-black text-[#10b981] mt-0.5">
+                      {formatCurrency(
+                        yearReservas
+                          .filter((r) => {
+                            const cab = safeCabanas.find((c) => c.nombre === selectedCabinSegment);
+                            return cab && r.cabanaId === cab.id;
+                          })
+                          .reduce((acc, r) => acc + r.montoTotal, 0)
+                      )}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
+                      % DE INGRESOS
+                    </span>
+                    <span className="text-xl font-sans font-black text-emerald-400 mt-0.5">
                       {Math.round(
-                        (yearReservas.filter((r) => {
-                          const cab = safeCabanas.find((c) => c.nombre === selectedCabinSegment);
-                          return cab && r.cabanaId === cab.id;
-                        }).length / (yearReservas.length || 1)) * 100
+                        (yearReservas
+                          .filter((r) => {
+                            const cab = safeCabanas.find((c) => c.nombre === selectedCabinSegment);
+                            return cab && r.cabanaId === cab.id;
+                          })
+                          .reduce((acc, r) => acc + r.montoTotal, 0) /
+                          totalCabinIncome) *
+                          100
                       )}%
                     </span>
                   </div>
@@ -539,165 +449,88 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
         </div>
 
         {/* Chart 2: Canal de Captación */}
-        <div className="bg-[#1b1e1b] rounded-xl border border-neutral-800/40 border-t-2 border-[#D29B6C] p-6 shadow-xl space-y-6">
-          <div className="flex items-center gap-2 pb-2 border-b border-neutral-900">
-            <PieChart className="w-5 h-5 text-indigo-400" />
+        <div className="bg-[#1b1e1b] rounded-xl border border-neutral-800/40 border-t-2 border-[#D29B6C] p-4.5 shadow-xl space-y-3.5">
+          <div className="flex items-center gap-2 pb-1.5 border-b border-neutral-900/60">
+            <BarChart3 className="w-5 h-5 text-indigo-400" />
             <h3 className="text-sm font-sans font-bold text-neutral-100">
               Canal de Captación
             </h3>
           </div>
-          <div className="flex flex-col items-center justify-center py-4">
-            <div className="relative w-56 h-56 flex items-center justify-center">
-              <svg className="w-full h-full" viewBox="0 0 100 100">
-                {/* Background ring */}
-                <circle
-                  cx="50"
-                  cy="50"
-                  fill="transparent"
-                  r="40"
-                  stroke="#262626"
-                  strokeWidth="18"
-                ></circle>
-                {channelDonutSegments.map((seg, i) => {
-                  const dashArray = 2 * Math.PI * 40;
-                  const strokeOffset = dashArray - (seg.angle / 360) * dashArray;
-                  const isSelected = selectedChannelSegment === seg.name;
-                  return (
-                    <g 
-                      key={seg.name} 
-                      className="cursor-pointer" 
-                      onClick={() => {
-                        setSelectedChannelSegment((prev) => (prev === seg.name ? null : seg.name));
-                      }}
-                    >
-                      {/* White outline border behind selected segment */}
-                      {isSelected && (
-                        <circle
-                          cx="50"
-                          cy="50"
-                          fill="transparent"
-                          r="40"
-                          stroke="#ffffff"
-                          strokeWidth="22"
-                          strokeDasharray={251.3}
-                          strokeDashoffset={strokeOffset}
-                          className="transition-all duration-300 ease-out pointer-events-none"
-                          transform={`rotate(${seg.startAngle - 90} 50 50)`}
-                        />
-                      )}
-                      {/* Colored arc segment */}
-                      <circle
-                        cx="50"
-                        cy="50"
-                        fill="transparent"
-                        r="40"
-                        stroke={seg.color}
-                        strokeWidth="18"
-                        strokeDasharray={251.3}
-                        strokeDashoffset={strokeOffset}
-                        className="transition-all duration-300 ease-out hover:brightness-110"
-                        transform={`rotate(${seg.startAngle - 90} 50 50)`}
-                      />
-                    </g>
-                  );
-                })}
-
-                {/* Render labels on top of the segments inside the wide ring */}
-                {channelDonutSegments.map((seg) => {
-                  if (seg.count === 0) return null; // Skip slices with no bookings to prevent overlap
-                  const midAngle = seg.startAngle + seg.angle / 2 - 90;
-                  const angleRad = (midAngle * Math.PI) / 180;
-                  // Center of the ring is at radius 40
-                  const labelX = 50 + 40 * Math.cos(angleRad);
-                  const labelY = 50 + 40 * Math.sin(angleRad);
-
-                  const channelLabel = seg.name.toUpperCase();
-
-                  return (
-                    <g 
-                      key={`label-${seg.name}`} 
-                      className="select-none pointer-events-none transition-all duration-300"
-                    >
-                      {/* Channel Name with high-contrast outline halo */}
-                      <text
-                        x={labelX}
-                        y={labelY - 1.8}
-                        fill="#ffffff"
-                        fontSize="3.2"
-                        fontWeight="bold"
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        className="font-sans font-bold fill-white"
-                        stroke="#000000"
-                        strokeWidth="1.0"
-                        strokeLinejoin="round"
-                        paintOrder="stroke"
-                      >
-                        {channelLabel}
-                      </text>
-                      {/* Count with high-contrast outline halo */}
-                      <text
-                        x={labelX}
-                        y={labelY + 2.4}
-                        fill="#ffffff"
-                        fontSize="4.2"
-                        fontWeight="black"
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        className="font-sans font-black fill-white"
-                        stroke="#000000"
-                        strokeWidth="1.4"
-                        strokeLinejoin="round"
-                        paintOrder="stroke"
-                      >
-                        {seg.count}
-                      </text>
-                    </g>
-                  );
-                })}
-              </svg>
-              <div className="absolute text-center flex flex-col items-center justify-center pointer-events-none">
-                <span className="block font-sans text-xl font-bold text-white">100%</span>
-                <span className="block font-sans text-[10px] text-[#b2ceb4] uppercase tracking-widest font-semibold">
-                  Reservas
-                </span>
-              </div>
-            </div>
+          
+          <div className="space-y-2 py-0.5">
+            {[...channelCounts].sort((a, b) => b.amount - a.amount).map((seg) => {
+              const percentage = totalChannelIncome > 0 ? (seg.amount / totalChannelIncome) * 100 : 0;
+              const isSelected = selectedChannelSegment === seg.name;
+              return (
+                <div 
+                  key={seg.name} 
+                  className={`space-y-1 p-1.5 rounded-md transition-all duration-300 cursor-pointer ${
+                    isSelected ? 'bg-neutral-800/15 border border-neutral-800/40' : 'border border-transparent hover:bg-neutral-800/5'
+                  }`} 
+                  onClick={() => {
+                    setSelectedChannelSegment((prev) => (prev === seg.name ? null : seg.name));
+                  }}
+                >
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-sans font-semibold text-neutral-200 transition-colors">
+                      {seg.name}
+                    </span>
+                    <div className="flex items-center gap-1.5 text-xs font-sans">
+                      <span className="text-[#818cf8] font-bold text-sm mr-1">
+                        {formatCurrency(seg.amount)}
+                      </span>
+                      <span className="text-neutral-500 font-medium">
+                        ({seg.count} {seg.count === 1 ? 'res.' : 'res.'})
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Progress Bar Track */}
+                  <div className="w-full h-2 bg-neutral-900 rounded-full overflow-hidden border border-neutral-800/20">
+                    {/* Progress Bar Fill */}
+                    <div 
+                      className="h-full rounded-full bg-gradient-to-r from-indigo-600 to-violet-400 shadow-[0_0_8px_rgba(129,140,248,0.2)] transition-all duration-500 ease-out"
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
           {selectedChannelSegment && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
-              className="mt-6 p-5 bg-[#121412] border border-neutral-800/80 rounded-xl relative overflow-hidden shadow-lg"
+              className="mt-4 p-4 bg-[#121412] border border-neutral-800/80 rounded-xl relative overflow-hidden shadow-lg"
             >
               {/* Decorative vertical colored stripe */}
               <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#818cf8]"></div>
               
               <button
                 onClick={() => setSelectedChannelSegment(null)}
-                className="absolute top-3 right-3 text-neutral-500 hover:text-white text-xs cursor-pointer"
+                className="absolute top-2.5 right-2.5 text-neutral-500 hover:text-white text-xs cursor-pointer"
                 title="Cerrar detalle"
               >
                 ✕
               </button>
               
-              <div className="pl-2 pr-4 flex flex-col sm:flex-row sm:items-stretch sm:justify-between gap-4">
+              <div className="pl-1 pr-1 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <span className="text-[10px] font-sans font-extrabold text-[#818cf8] uppercase tracking-wider">
+                  <span className="text-[9px] font-sans font-extrabold text-[#818cf8] uppercase tracking-wider">
                     Detalle de Canal
                   </span>
-                  <h4 className="text-xl font-headline font-bold text-white mt-1">
+                  <h4 className="text-lg font-headline font-bold text-white mt-0.5">
                     {selectedChannelSegment}
                   </h4>
                 </div>
                 
-                <div className="flex items-center gap-6 self-start sm:self-center">
+                <div className="flex items-center gap-4 self-start sm:self-center">
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
+                    <span className="text-[9px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
                       RESERVAS ACTIVAS
                     </span>
-                    <span className="text-2xl font-sans font-black text-white mt-1">
+                    <span className="text-xl font-sans font-black text-white mt-0.5">
                       {yearReservas.filter((r) => {
                         if (selectedChannelSegment === "Otros") {
                           return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
@@ -708,17 +541,39 @@ export default function Dashboard({ cabanas, reservas, contrataciones, clientes,
                   </div>
                   
                   <div className="flex flex-col">
-                    <span className="text-[10px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
-                      PORCENTAJE DE RESERVAS
+                    <span className="text-[9px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
+                      INGRESOS TOTALES
                     </span>
-                    <span className="text-2xl font-sans font-black text-[#818cf8] mt-1">
+                    <span className="text-xl font-sans font-black text-[#818cf8] mt-0.5">
+                      {formatCurrency(
+                        yearReservas
+                          .filter((r) => {
+                            if (selectedChannelSegment === "Otros") {
+                              return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
+                            }
+                            return r.canalVentas === selectedChannelSegment;
+                          })
+                          .reduce((acc, r) => acc + r.montoTotal, 0)
+                      )}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-col">
+                    <span className="text-[9px] font-sans font-extrabold text-neutral-200 uppercase tracking-widest">
+                      % DE INGRESOS
+                    </span>
+                    <span className="text-xl font-sans font-black text-indigo-400 mt-0.5">
                       {Math.round(
-                        (yearReservas.filter((r) => {
-                          if (selectedChannelSegment === "Otros") {
-                            return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
-                          }
-                          return r.canalVentas === selectedChannelSegment;
-                        }).length / (yearReservas.length || 1)) * 100
+                        (yearReservas
+                          .filter((r) => {
+                            if (selectedChannelSegment === "Otros") {
+                              return !["Airbnb", "Directo", "Booking"].includes(r.canalVentas);
+                            }
+                            return r.canalVentas === selectedChannelSegment;
+                          })
+                          .reduce((acc, r) => acc + r.montoTotal, 0) /
+                          totalChannelIncome) *
+                          100
                       )}%
                     </span>
                   </div>
