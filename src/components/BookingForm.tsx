@@ -557,7 +557,7 @@ export default function BookingForm({
       <form onSubmit={handleSubmit} className="space-y-6 pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Section: Customer & Unit selection */}
-          <div className="lg:col-span-7 bg-[#242924] rounded-xl p-6 border border-neutral-800/80 shadow-xl space-y-6">
+          <div className={`${viewBookingId ? "lg:col-span-12" : "lg:col-span-7"} bg-[#242924] rounded-xl p-6 border border-neutral-800/80 shadow-xl space-y-6`}>
             <h3 className="text-sm font-sans font-bold text-neutral-100 flex flex-col md:flex-row md:items-center justify-between gap-2 mb-4">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[#f6bb89] text-lg">contact_page</span>
@@ -656,13 +656,12 @@ export default function BookingForm({
               {selectedClientObj && (
                 <div className="bg-[#0b0c0b]/90 border border-neutral-800 rounded-xl p-5 space-y-4 mt-2 animate-in fade-in slide-in-from-top-1 duration-150 shadow-inner">
 
-
                   {/* Section 1: Datos del Huésped */}
                   <div className="space-y-3">
                     <h5 className="text-[9px] font-sans font-extrabold text-[#b2ceb4]/60 uppercase tracking-widest">
                       Datos del Huésped
                     </h5>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs font-sans">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-sans">
                       <div className="space-y-0.5">
                         <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase block tracking-wider">
                           Nombre Completo
@@ -708,7 +707,7 @@ export default function BookingForm({
                       <h5 className="text-[9px] font-sans font-extrabold text-[#b2ceb4]/60 uppercase tracking-widest">
                         Asignación y Reserva
                       </h5>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-sans">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 text-xs font-sans">
                         <div className="space-y-0.5">
                           <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase block tracking-wider">
                             Cabaña / Unidad
@@ -725,6 +724,24 @@ export default function BookingForm({
                           <span className="text-neutral-100 font-bold flex items-center gap-1.5">
                             <span className="material-symbols-outlined text-[13px] text-[#b2ceb4] leading-none">calendar_month</span>
                             {formatToYYMMDD(fechaReserva)}
+                          </span>
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase block tracking-wider">
+                            Entrada
+                          </span>
+                          <span className="text-neutral-100 font-bold flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[13px] text-[#b2ceb4] leading-none">login</span>
+                            {formatToYYMMDD(entrada)}
+                          </span>
+                        </div>
+                        <div className="space-y-0.5">
+                          <span className="text-[9px] font-sans font-bold text-neutral-500 uppercase block tracking-wider">
+                            Salida
+                          </span>
+                          <span className="text-neutral-100 font-bold flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[13px] text-[#b2ceb4] leading-none">logout</span>
+                            {formatToYYMMDD(salida)}
                           </span>
                         </div>
                         <div className="space-y-0.5">
@@ -798,7 +815,7 @@ export default function BookingForm({
 
               {/* Stay duration & Head count passengers counter */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
-                {!viewBookingId && (
+                {!viewBookingId ? (
                   <div className="space-y-1">
                     <div className="relative">
                       <select
@@ -823,9 +840,37 @@ export default function BookingForm({
                       )}
                     </div>
                   </div>
+                ) : (
+                  /* Canal de Ventas dropdown in viewBookingId mode */
+                  <div className="space-y-1">
+                    <div className="relative">
+                      <select
+                        value={canalVentas}
+                        onChange={(e) => setCanalVentas(e.target.value as any)}
+                        disabled={!isEditMode}
+                        className="w-full pl-10 pr-10 bg-[#0b0c0b] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-sans font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed h-11"
+                      >
+                        <option value="Directo">Directo</option>
+                        <option value="Airbnb">Airbnb</option>
+                        <option value="Booking">Booking</option>
+                        <option value="WhatsApp">WhatsApp</option>
+                        <option value="Instagram">Instagram</option>
+                        <option value="Facebook">Facebook</option>
+                        <option value="Otros">Otros</option>
+                      </select>
+                      <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 text-sm">
+                        campaign
+                      </span>
+                      {isEditMode && (
+                        <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                          expand_more
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 )}
 
-                <div className={`space-y-1 ${viewBookingId ? "md:col-span-2" : ""}`}>
+                <div className="space-y-1">
                   <div className="relative">
                     <select
                       value={pasajeros}
@@ -854,98 +899,100 @@ export default function BookingForm({
           </div>
 
           {/* Section: Stay Details */}
-          <div className="lg:col-span-5 bg-[#242924] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
-            <h3 className="text-sm font-sans font-bold text-neutral-100 flex items-center gap-2 mb-4">
-              <Calendar className="w-5 h-5 text-[#f6bb89]" />
-              Detalles de la Estadía
-            </h3>
+          {!viewBookingId && (
+            <div className="lg:col-span-5 bg-[#242924] rounded-xl p-6 border border-neutral-800 shadow-xl space-y-6">
+              <h3 className="text-sm font-sans font-bold text-neutral-100 flex items-center gap-2 mb-4">
+                <Calendar className="w-5 h-5 text-[#f6bb89]" />
+                Detalles de la Estadía
+              </h3>
 
-            <div className="space-y-4">
-              <div className="relative">
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Clickable ENTRADA trigger box */}
-                  <div
-                    onClick={!viewBookingId ? toggleStayCalendar : undefined}
-                    className={`p-3 bg-[#0b0c0b] border-l-4 border-[#f6bb89] rounded-r-lg relative select-none hover:border-neutral-600 transition-all ${
-                      viewBookingId ? "cursor-not-allowed opacity-75" : "cursor-pointer"
-                    }`}
-                    title={viewBookingId ? "No se puede modificar la fecha de entrada" : "Haga clic para seleccionar fechas en el calendario"}
-                  >
-                    <span className="block text-[10px] font-sans font-bold text-[#f6bb89] uppercase mb-1">
-                      ENTRADA
-                    </span>
-                    <span className="text-sm font-bold text-neutral-100 block pr-6">
-                      {formatToYYMMDD(entrada)}
-                    </span>
-                    <Calendar className="w-3.5 h-3.5 text-white absolute right-3 bottom-3" />
+              <div className="space-y-4">
+                <div className="relative">
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Clickable ENTRADA trigger box */}
+                    <div
+                      onClick={!viewBookingId ? toggleStayCalendar : undefined}
+                      className={`p-3 bg-[#0b0c0b] border-l-4 border-[#f6bb89] rounded-r-lg relative select-none hover:border-neutral-600 transition-all ${
+                        viewBookingId ? "cursor-not-allowed opacity-75" : "cursor-pointer"
+                      }`}
+                      title={viewBookingId ? "No se puede modificar la fecha de entrada" : "Haga clic para seleccionar fechas en el calendario"}
+                    >
+                      <span className="block text-[10px] font-sans font-bold text-[#f6bb89] uppercase mb-1">
+                        ENTRADA
+                      </span>
+                      <span className="text-sm font-bold text-neutral-100 block pr-6">
+                        {formatToYYMMDD(entrada)}
+                      </span>
+                      <Calendar className="w-3.5 h-3.5 text-white absolute right-3 bottom-3" />
+                    </div>
+
+                    {/* Clickable SALIDA trigger box */}
+                    <div
+                      onClick={!viewBookingId ? toggleStayCalendar : undefined}
+                      className={`p-3 bg-[#0b0c0b] border-l-4 border-[#f6bb89]/40 rounded-r-lg relative select-none hover:border-neutral-600 transition-all ${
+                        viewBookingId ? "cursor-not-allowed opacity-75" : "cursor-pointer"
+                      }`}
+                      title={viewBookingId ? "No se puede modificar la fecha de salida" : "Haga clic para seleccionar fechas en el calendario"}
+                    >
+                      <span className="block text-[10px] font-sans font-bold text-[#f6bb89]/70 uppercase mb-1">
+                        SALIDA
+                      </span>
+                      <span className="text-sm font-bold text-neutral-100 block pr-6">
+                        {formatToYYMMDD(salida)}
+                      </span>
+                      <Calendar className="w-3.5 h-3.5 text-white absolute right-3 bottom-3" />
+                    </div>
                   </div>
 
-                  {/* Clickable SALIDA trigger box */}
-                  <div
-                    onClick={!viewBookingId ? toggleStayCalendar : undefined}
-                    className={`p-3 bg-[#0b0c0b] border-l-4 border-[#f6bb89]/40 rounded-r-lg relative select-none hover:border-neutral-600 transition-all ${
-                      viewBookingId ? "cursor-not-allowed opacity-75" : "cursor-pointer"
-                    }`}
-                    title={viewBookingId ? "No se puede modificar la fecha de salida" : "Haga clic para seleccionar fechas en el calendario"}
-                  >
-                    <span className="block text-[10px] font-sans font-bold text-[#f6bb89]/70 uppercase mb-1">
-                      SALIDA
-                    </span>
-                    <span className="text-sm font-bold text-neutral-100 block pr-6">
-                      {formatToYYMMDD(salida)}
-                    </span>
-                    <Calendar className="w-3.5 h-3.5 text-white absolute right-3 bottom-3" />
-                  </div>
+                  {/* Collapsible Calendar Grid Popover (Discreet absolute overlay) */}
+                  {isCalendarExpanded && (
+                    <div className="absolute z-50 left-0 right-0 md:left-auto md:right-0 md:w-[320px] top-[74px] bg-[#0b0c0b] border border-neutral-800 rounded-xl shadow-2xl shadow-black/90 animate-in fade-in slide-in-from-top-2 duration-150">
+                      {renderMiniCalendar()}
+                    </div>
+                  )}
                 </div>
 
-                {/* Collapsible Calendar Grid Popover (Discreet absolute overlay) */}
-                {isCalendarExpanded && (
-                  <div className="absolute z-50 left-0 right-0 md:left-auto md:right-0 md:w-[320px] top-[74px] bg-[#0b0c0b] border border-neutral-800 rounded-xl shadow-2xl shadow-black/90 animate-in fade-in slide-in-from-top-2 duration-150">
-                    {renderMiniCalendar()}
+                {/* Hidden HTML input fields for accessibility/compatibility */}
+                <input type="hidden" name="checkIn" value={entrada} />
+                <input type="hidden" name="checkOut" value={salida} />
+
+                {/* Nights indicator pill block */}
+                <div className="flex items-center justify-center py-2.5 px-4 bg-[#0b0c0b] border border-neutral-800 rounded-full">
+                  <span className="text-xs text-neutral-400 font-sans font-medium">
+                    Duración total:{" "}
+                  </span>
+                  <span className="ml-2 font-bold font-sans text-xs text-[#b2ceb4]">
+                    {noches} Días y {noches} Noches
+                  </span>
+                </div>
+
+                {/* Sales Channel */}
+                <div className="space-y-1 pt-2">
+                  <div className="relative">
+                    <select
+                      value={canalVentas}
+                      onChange={(e) => setCanalVentas(e.target.value as any)}
+                      disabled={!isEditMode}
+                      className="w-full bg-[#0b0c0b] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-sans font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
+                    >
+                      <option value="Directo">Directo</option>
+                      <option value="Airbnb">Airbnb</option>
+                      <option value="Booking">Booking</option>
+                      <option value="WhatsApp">WhatsApp</option>
+                      <option value="Instagram">Instagram</option>
+                      <option value="Facebook">Facebook</option>
+                      <option value="Otros">Otros</option>
+                    </select>
+                    {isEditMode && (
+                      <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
+                        expand_more
+                      </span>
+                    )}
                   </div>
-                )}
-              </div>
-
-              {/* Hidden HTML input fields for accessibility/compatibility */}
-              <input type="hidden" name="checkIn" value={entrada} />
-              <input type="hidden" name="checkOut" value={salida} />
-
-              {/* Nights indicator pill block */}
-              <div className="flex items-center justify-center py-2.5 px-4 bg-[#0b0c0b] border border-neutral-800 rounded-full">
-                <span className="text-xs text-neutral-400 font-sans font-medium">
-                  Duración total:{" "}
-                </span>
-                <span className="ml-2 font-bold font-sans text-xs text-[#b2ceb4]">
-                  {noches} Días y {noches} Noches
-                </span>
-              </div>
-
-              {/* Sales Channel */}
-              <div className="space-y-1 pt-2">
-                <div className="relative">
-                  <select
-                    value={canalVentas}
-                    onChange={(e) => setCanalVentas(e.target.value as any)}
-                    disabled={!isEditMode}
-                    className="w-full bg-[#0b0c0b] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs font-sans font-semibold outline-none appearance-none disabled:opacity-75 disabled:cursor-not-allowed"
-                  >
-                    <option value="Directo">Directo</option>
-                    <option value="Airbnb">Airbnb</option>
-                    <option value="Booking">Booking</option>
-                    <option value="WhatsApp">WhatsApp</option>
-                    <option value="Instagram">Instagram</option>
-                    <option value="Facebook">Facebook</option>
-                    <option value="Otros">Otros</option>
-                  </select>
-                  {isEditMode && (
-                    <span className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 pointer-events-none">
-                      expand_more
-                    </span>
-                  )}
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Section financial details */}
