@@ -14,6 +14,13 @@ interface ServiceFormProps {
   onBack: () => void;
 }
 
+const formatMoney = (valStr: string) => {
+  const clean = valStr.replace(/\D/g, "");
+  if (!clean) return "";
+  const num = parseInt(clean, 10);
+  return new Intl.NumberFormat("es-CL").format(num).replace(/,/g, ".");
+};
+
 export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceFormProps) {
   const [isEditingState, setIsEditingState] = useState(false);
   const [selectedServiceId, setSelectedServiceId] = useState("");
@@ -31,11 +38,11 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
 
   const handleSelectServiceToEdit = (serviceId: string) => {
     setSelectedServiceId(serviceId);
-    const serv = servicios.find((s) => s.id === serviceId);
+    const serv = servicios.find((s) => String(s.id) === String(serviceId));
     if (serv) {
       setNombre(serv.nombre || "");
       setDescripcion(serv.descripcion || "");
-      setPrecio((serv.precio || 0).toString());
+      setPrecio(formatMoney((serv.precio || 0).toString()));
       setTipoCobro(serv.tipoCobro || "Por persona");
       setTipoPago(serv.tipoPago || "Transferencia");
       setEstado(serv.estado || "Activo");
@@ -53,11 +60,17 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
     e.preventDefault();
     if (!nombre.trim()) return;
 
+    const rawPrecio = parseInt(precio.replace(/\./g, ""), 10) || 0;
+    if (rawPrecio < 0) {
+      alert("Error: El precio no puede ser negativo.");
+      return;
+    }
+
     const newService: Servicio = {
       id: targetId,
       nombre,
       descripcion: descripcion || "Servicio premium complementario para su estancia.",
-      precio: Number(precio) || 0.00,
+      precio: rawPrecio,
       tipoCobro,
       tipoPago,
       estado,
@@ -119,7 +132,7 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
                   <option value="">-- Seleccione Servicio --</option>
                   {servicios.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.nombre} (${s.precio})
+                      {s.nombre} (${new Intl.NumberFormat("es-CL").format(s.precio).replace(/,/g, ".")})
                     </option>
                   ))}
                 </select>
@@ -182,12 +195,13 @@ export default function ServiceForm({ servicios = [], onSave, onBack }: ServiceF
                 <div className="relative">
                   <span className="absolute left-4 top-1/2 -translate-y-1/2 text-[#f6bb89] font-bold text-sm">$</span>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required
-                    placeholder="0.00"
+                    placeholder="0"
                     value={precio}
-                    onChange={(e) => setPrecio(e.target.value)}
-                    className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3.5 pl-8 text-sm outline-none transition-all"
+                    onChange={(e) => setPrecio(formatMoney(e.target.value))}
+                    className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3.5 pl-8 text-sm outline-none transition-all font-bold"
                   />
                 </div>
               </div>

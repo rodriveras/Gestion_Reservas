@@ -115,7 +115,7 @@ export default function CalendarView({
       const balance = (r.montoTotal || 0) + servicesTotal - deposit;
 
       const servicesWithNames = bookingServices.map((c) => {
-        const srv = servicios.find((s) => s.id === c.servicioId);
+        const srv = servicios.find((s) => String(s.id) === String(c.servicioId));
         return {
           id: c.id,
           nombre: srv ? srv.nombre : "Servicio",

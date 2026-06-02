@@ -78,41 +78,58 @@ export default function AdminLauncher({
             <button
               id="btn-shortcut-client"
               onClick={() => onNavigate("new-client")}
-              className="w-full py-3 bg-transparent border border-white/20 hover:bg-white/5 hover:border-white/30 text-white rounded-full transition-all cursor-pointer flex items-center justify-center active:scale-95"
+              className="w-full py-3.5 bg-transparent border border-white/20 hover:bg-white/5 hover:border-white/30 text-white rounded-2xl transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 active:scale-95 group"
               title="Nuevo Cliente"
             >
-              <UserPlus className="w-5 h-5" />
+              <UserPlus className="w-5 h-5 text-[#b2ceb4] group-hover:scale-105 transition-transform" />
+              <span className="text-[8.5px] font-sans uppercase tracking-wider font-extrabold text-neutral-400 group-hover:text-white transition-colors">Clientes</span>
             </button>
 
             <button
               id="btn-shortcut-booking"
               onClick={() => onNavigate("new-booking")}
-              className="w-full py-3 bg-transparent border border-white/20 hover:bg-white/5 hover:border-white/30 text-white rounded-full transition-all cursor-pointer flex items-center justify-center active:scale-95"
+              className="w-full py-3.5 bg-transparent border border-white/20 hover:bg-white/5 hover:border-white/30 text-white rounded-2xl transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 active:scale-95 group"
               title="Nueva Reserva"
             >
-              <Calendar className="w-5 h-5" />
+              <Calendar className="w-5 h-5 text-[#b2ceb4] group-hover:scale-105 transition-transform" />
+              <span className="text-[8.5px] font-sans uppercase tracking-wider font-extrabold text-neutral-400 group-hover:text-white transition-colors">Reservas</span>
             </button>
 
             <button
               id="btn-shortcut-contract"
               onClick={() => onNavigate("contract-service")}
-              className="w-full py-3 bg-transparent border border-white/20 hover:bg-white/5 hover:border-white/30 text-white rounded-full transition-all cursor-pointer flex items-center justify-center active:scale-95"
+              className="w-full py-3.5 bg-transparent border border-white/20 hover:bg-white/5 hover:border-white/30 text-white rounded-2xl transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 active:scale-95 group"
               title="Contratar Servicio"
             >
               <svg 
                 viewBox="0 0 24 24" 
-                className="w-5 h-5 text-white fill-white/10 shrink-0"
+                className="w-5 h-5 text-[#b2ceb4] fill-[#b2ceb4]/10 shrink-0 group-hover:scale-105 transition-transform"
                 stroke="currentColor"
                 strokeWidth="2" 
                 strokeLinecap="round" 
                 strokeLinejoin="round"
               >
-                <path d="M7 2c.3-.8.7-.8.9 0s.7.8.9 0M12 2c.3-.8.7-.8.9 0s.7.8.9 0M17 2c.3-.8.7-.8.9 0s.7.8.9 0" />
-                <path d="M4 8h16v11a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8z" />
-                <path d="M4 11c1.5-.4 2.5-.4 4 0s2.5 .4 4 0 2.5-.4 4 0 1.5 0 2 0" />
-                <path d="M8 8v14M12 8v14M16 8v14" />
-                <path d="M4 13h16M4 18h16" />
+                {/* Steam waves */}
+                <path d="M4.5 9 C3.7 8, 5.3 7, 4.5 6 C3.7 5, 5.3 4, 4.5 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                <path d="M6.5 9 C5.7 8, 7.3 7, 6.5 6 C5.7 5, 7.3 4, 6.5 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                <path d="M8.5 9 C7.7 8, 9.3 7, 8.5 6 C7.7 5, 9.3 4, 8.5 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                
+                {/* Person */}
+                <circle cx="17" cy="4.5" r="1.5" fill="currentColor" stroke="none" />
+                <path d="M 13.5 10 L 17 7.5 L 18.2 10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+
+                {/* Rim of the Tub */}
+                <rect x="2" y="10" width="20" height="2" rx="1" fill="currentColor" stroke="none" />
+                
+                {/* Tub Body with wooden slats cut out using evenodd fill rule */}
+                <path 
+                  d="M 3 12 L 3 13.5 C 3 17 7 19.5 12 19.5 C 17 19.5 21 17 21 13.5 L 21 12 Z M 5 12 h 0.8 v 2.5 h -0.8 Z M 7 12 h 0.8 v 4.5 h -0.8 Z M 9 12 h 0.8 v 5.8 h -0.8 Z M 11 12 h 0.8 v 6.3 h -0.8 Z M 13 12 h 0.8 v 6.3 h -0.8 Z M 15 12 h 0.8 v 5.8 h -0.8 Z M 17 12 h 0.8 v 4.5 h -0.8 Z M 19 12 h 0.8 v 2.5 h -0.8 Z" 
+                  fill="currentColor" 
+                  fillRule="evenodd" 
+                  stroke="none" 
+                />
               </svg>
+              <span className="text-[8.5px] font-sans uppercase tracking-wider font-extrabold text-neutral-400 group-hover:text-white transition-colors">Servicios</span>
             </button>
           </div>
         </div>

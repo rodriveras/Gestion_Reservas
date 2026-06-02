@@ -971,13 +971,26 @@ export default function App() {
                         strokeWidth="2" 
                         strokeLinecap="round" 
                         strokeLinejoin="round"
-                        fill="none"
                       >
-                        <path d="M7 2c.3-.8.7-.8.9 0s.7.8.9 0M12 2c.3-.8.7-.8.9 0s.7.8.9 0M17 2c.3-.8.7-.8.9 0s.7.8.9 0" />
-                        <path d="M4 8h16v11a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8z" />
-                        <path d="M4 11c1.5-.4 2.5-.4 4 0s2.5 .4 4 0 2.5-.4 4 0 1.5 0 2 0" />
-                        <path d="M8 8v14M12 8v14M16 8v14" />
-                        <path d="M4 13h16M4 18h16" />
+                        {/* Steam waves */}
+                        <path d="M4.5 9 C3.7 8, 5.3 7, 4.5 6 C3.7 5, 5.3 4, 4.5 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                        <path d="M6.5 9 C5.7 8, 7.3 7, 6.5 6 C5.7 5, 7.3 4, 6.5 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                        <path d="M8.5 9 C7.7 8, 9.3 7, 8.5 6 C7.7 5, 9.3 4, 8.5 3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" fill="none" />
+                        
+                        {/* Person */}
+                        <circle cx="17" cy="4.5" r="1.5" fill="currentColor" stroke="none" />
+                        <path d="M 13.5 10 L 17 7.5 L 18.2 10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+
+                        {/* Rim of the Tub */}
+                        <rect x="2" y="10" width="20" height="2" rx="1" fill="currentColor" stroke="none" />
+                        
+                        {/* Tub Body with wooden slats cut out using evenodd fill rule */}
+                        <path 
+                          d="M 3 12 L 3 13.5 C 3 17 7 19.5 12 19.5 C 17 19.5 21 17 21 13.5 L 21 12 Z M 5 12 h 0.8 v 2.5 h -0.8 Z M 7 12 h 0.8 v 4.5 h -0.8 Z M 9 12 h 0.8 v 5.8 h -0.8 Z M 11 12 h 0.8 v 6.3 h -0.8 Z M 13 12 h 0.8 v 6.3 h -0.8 Z M 15 12 h 0.8 v 5.8 h -0.8 Z M 17 12 h 0.8 v 4.5 h -0.8 Z M 19 12 h 0.8 v 2.5 h -0.8 Z" 
+                          fill="currentColor" 
+                          fillRule="evenodd" 
+                          stroke="none" 
+                        />
                       </svg>
                     </div>
                     Nuevo Servicio

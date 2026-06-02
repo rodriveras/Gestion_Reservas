@@ -14,6 +14,13 @@ interface CabinFormProps {
   onBack: () => void;
 }
 
+const formatMoney = (valStr: string) => {
+  const clean = valStr.replace(/\D/g, "");
+  if (!clean) return "";
+  const num = parseInt(clean, 10);
+  return new Intl.NumberFormat("es-CL").format(num).replace(/,/g, ".");
+};
+
 export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormProps) {
   const [isEditingState, setIsEditingState] = useState(false);
   const [selectedCabinId, setSelectedCabinId] = useState("");
@@ -40,7 +47,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
       setNombre(cab.nombre || "");
       setTipo(cab.tipo || "Familiar");
       setEstado(cab.estado || "Disponible");
-      setPrecioBase((cab.precioBase || 0).toString());
+      setPrecioBase(formatMoney((cab.precioBase || 0).toString()));
       setDescripcion(cab.descripcion || "");
       setSuperficie((cab.superficie || 45).toString());
       setHabitaciones((cab.habitaciones || 2).toString());
@@ -69,7 +76,8 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
     e.preventDefault();
     if (!nombre.trim() || !precioBase.trim()) return;
 
-    if (Number(precioBase) < 0) {
+    const rawPrecio = parseInt(precioBase.replace(/\./g, ""), 10) || 0;
+    if (rawPrecio < 0) {
       alert("Error: El precio base por noche no puede ser negativo.");
       return;
     }
@@ -81,7 +89,7 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
       nombre,
       tipo,
       estado,
-      precioBase: Number(precioBase) || 150,
+      precioBase: rawPrecio,
       descripcion: descripcion || "Cabaña rústica premium con todas las comodidades de montaña.",
       superficie: Number(superficie) || 45,
       habitaciones: Number(habitaciones) || 2,
@@ -230,18 +238,13 @@ export default function CabinForm({ cabanas = [], onSave, onBack }: CabinFormPro
                 <div className="relative">
                   <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[#f6bb89] font-bold text-sm">$</span>
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
                     required
-                    min="0"
-                    placeholder="0.00"
+                    placeholder="0"
                     value={precioBase}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      if (val === "" || Number(val) >= 0) {
-                        setPrecioBase(val);
-                      }
-                    }}
-                    className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 pl-7 text-sm outline-none transition-all"
+                    onChange={(e) => setPrecioBase(formatMoney(e.target.value))}
+                    className="w-full bg-[#121412] text-neutral-200 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 pl-7 text-sm outline-none transition-all font-bold"
                   />
                 </div>
               </div>

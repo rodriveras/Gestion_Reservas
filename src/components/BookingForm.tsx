@@ -8,6 +8,13 @@ import { motion } from "motion/react";
 import { ArrowLeft, Save, Sparkles, DollarSign, Calendar, Landmark, Users, Trash2 } from "lucide-react";
 import { Cabana, Cliente, Reserva } from "../types";
 
+const formatMoney = (valStr: string) => {
+  const clean = valStr.replace(/\D/g, "");
+  if (!clean) return "";
+  const num = parseInt(clean, 10);
+  return new Intl.NumberFormat("es-CL").format(num).replace(/,/g, ".");
+};
+
 interface BookingFormProps {
   cabanas: Cabana[];
   clientes: Cliente[];
@@ -62,8 +69,8 @@ export default function BookingForm({
   });
   
   const [canalVentas, setCanalVentas] = useState<Reserva["canalVentas"]>(() => existingBooking?.canalVentas || "Directo");
-  const [montoTotal, setMontoTotal] = useState(() => existingBooking?.montoTotal ? existingBooking.montoTotal.toString() : "");
-  const [montoAnticipo, setMontoAnticipo] = useState(() => existingBooking?.montoAnticipo ? existingBooking.montoAnticipo.toString() : "0");
+  const [montoTotal, setMontoTotal] = useState(() => existingBooking?.montoTotal ? formatMoney(existingBooking.montoTotal.toString()) : "");
+  const [montoAnticipo, setMontoAnticipo] = useState(() => existingBooking?.montoAnticipo ? formatMoney(existingBooking.montoAnticipo.toString()) : "0");
   const [estadoReserva, setEstadoReserva] = useState<Reserva["estadoReserva"]>(() => existingBooking?.estadoReserva || "Pendiente de Pago");
   const [metodoPago, setMetodoPago] = useState<Reserva["metodoPago"]>(() => existingBooking?.metodoPago || "Transferencia");
 
@@ -101,11 +108,15 @@ export default function BookingForm({
   // Passenger capacity validation
   const exceedsCapacity = selectedCabinObj && pasajeros > selectedCabinObj.capacidad;
 
+  // Raw monetary values stripped of formatting dots for calculations and checks
+  const rawMontoTotal = Number(montoTotal.replace(/\./g, "")) || 0;
+  const rawMontoAnticipo = Number(montoAnticipo.replace(/\./g, "")) || 0;
+
   // Deposit validation
-  const hasDepositError = !!(Number(montoTotal) > 0 && Number(montoAnticipo) >= Number(montoTotal) && estadoReserva !== "Pagada");
+  const hasDepositError = !!(rawMontoTotal > 0 && rawMontoAnticipo >= rawMontoTotal && estadoReserva !== "Pagada");
 
   // Negative or zero amount validation
-  const hasAmountValidationError = Number(montoTotal) <= 0 || Number(montoAnticipo) < 0;
+  const hasAmountValidationError = rawMontoTotal <= 0 || rawMontoAnticipo < 0;
 
   // Form disable logic
   const isFormDisabled = isClientBlockedOrSuspended || isCabinNotAvailable || hasDateError || exceedsCapacity || hasDepositError || hasAmountValidationError;
@@ -192,12 +203,12 @@ export default function BookingForm({
       const cabana = cabanas.find((c) => c.id === cabanaId);
       if (cabana) {
         const calculatedTotal = cabana.precioBase * noches;
-        setMontoTotal(calculatedTotal.toString());
+        setMontoTotal(formatMoney(calculatedTotal.toString()));
         // set default deposit to 30% of total only for existing booking changes, otherwise default to "0" for new bookings
         if (!existingBooking) {
           setMontoAnticipo("0");
         } else {
-          setMontoAnticipo(Math.round(calculatedTotal * 0.3).toString());
+          setMontoAnticipo(formatMoney(Math.round(calculatedTotal * 0.3).toString()));
         }
       }
     }
@@ -514,8 +525,8 @@ export default function BookingForm({
       noches,
       cantidadPersonas: pasajeros,
       canalVentas,
-      montoTotal: Number(montoTotal) || 0,
-      montoAnticipo: Number(montoAnticipo) || 0,
+      montoTotal: rawMontoTotal,
+      montoAnticipo: rawMontoAnticipo,
       estadoReserva,
       metodoPago,
     };
@@ -774,7 +785,7 @@ export default function BookingForm({
                         <option value="">Elegir una propiedad...</option>
                         {cabanas.map((c) => (
                           <option key={c.id} value={c.id}>
-                            {c.nombre} (Capacidad: {c.capacidad} Pers.) — ${c.precioBase.toLocaleString("es-CL")}/Noche
+                            {c.nombre} (Capacidad: {c.capacidad} Pers.) — ${c.precioBase.toLocaleString("es-CL").replace(/,/g, ".")}/Noche
                           </option>
                         ))}
                       </select>
@@ -1011,17 +1022,12 @@ export default function BookingForm({
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-[#b2ceb4] text-sm">$</span>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   required
-                  min="1"
-                  placeholder="0.00"
+                  placeholder="0"
                   value={montoTotal}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "" || Number(val) >= 0) {
-                      setMontoTotal(val);
-                    }
-                  }}
+                  onChange={(e) => setMontoTotal(formatMoney(e.target.value))}
                   disabled={!isEditMode}
                   className="w-full pl-7 pr-4 bg-[#0b0c0b] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-sm font-sans font-bold outline-none disabled:opacity-75 disabled:cursor-not-allowed"
                 />
@@ -1036,17 +1042,12 @@ export default function BookingForm({
               <div className="relative">
                 <span className={`absolute left-3 top-1/2 -translate-y-1/2 font-bold text-sm ${hasDepositError ? "text-red-400" : "text-neutral-500"}`}>$</span>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   required
-                  min="0"
-                  placeholder="0.00"
+                  placeholder="0"
                   value={montoAnticipo}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "" || Number(val) >= 0) {
-                      setMontoAnticipo(val);
-                    }
-                  }}
+                  onChange={(e) => setMontoAnticipo(formatMoney(e.target.value))}
                   disabled={!isEditMode}
                   className={`w-full pl-7 pr-4 bg-[#0b0c0b] text-neutral-100 border rounded-lg p-3 text-sm font-sans font-bold outline-none disabled:opacity-75 disabled:cursor-not-allowed transition-colors ${
                     hasDepositError ? "border-red-500 focus:border-red-500 text-red-200" : "border-neutral-700 focus:border-[#b2ceb4]"

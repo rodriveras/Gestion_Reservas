@@ -43,9 +43,62 @@ export const sheetsService = {
       
       // Validar estructura básica del JSON recibido
       if (data && data.cabanas && data.clientes && data.servicios && data.reservas && data.contrataciones) {
+        // Coercer tipos de datos para alinearse con las interfaces de TypeScript y prevenir problemas de tipos
+        const cleanData: DatabaseState = {
+          cabanas: (data.cabanas || []).map((c: any) => ({
+            ...c,
+            id: String(c.id || ""),
+            precioBase: Number(c.precioBase) || 0,
+            superficie: Number(c.superficie) || 0,
+            habitaciones: Number(c.habitaciones) || 0,
+            banos: Number(c.banos) || 0,
+            camas: Number(c.camas) || 0,
+            capacidad: Number(c.capacidad) || 0,
+          })),
+          clientes: (data.clientes || []).map((c: any) => ({
+            ...c,
+            id: String(c.id || ""),
+            telefono: String(c.telefono || ""),
+          })),
+          servicios: (data.servicios || []).map((s: any) => ({
+            ...s,
+            id: String(s.id || ""),
+            precio: Number(s.precio) || 0,
+          })),
+          reservas: (data.reservas || []).map((r: any) => ({
+            ...r,
+            id: String(r.id || ""),
+            clienteId: String(r.clienteId || ""),
+            cabanaId: String(r.cabanaId || ""),
+            noches: Number(r.noches) || 0,
+            cantidadPersonas: Number(r.cantidadPersonas) || 0,
+            montoTotal: Number(r.montoTotal) || 0,
+            montoAnticipo: Number(r.montoAnticipo) || 0,
+          })),
+          contrataciones: (data.contrataciones || []).map((c: any) => ({
+            ...c,
+            id: String(c.id || ""),
+            reservaId: String(c.reservaId || ""),
+            clienteId: String(c.clienteId || ""),
+            servicioId: String(c.servicioId || ""),
+            precioPactado: Number(c.precioPactado) || 0,
+            cantidad: Number(c.cantidad) || 0,
+            subtotal: Number(c.subtotal) || 0,
+          })),
+          administracion: (data.administracion || []).map((a: any) => ({
+            ...a,
+            id: String(a.id || a.ide || "admin-config"),
+            Nombre_complejo: String(a.Nombre_complejo || a.ide || "CABAÑAS ENTRE NIEVES"),
+            Usuario: String(a.Usuario || ""),
+            Contrasena: String(a.Contrasena || ""),
+            Telefono: String(a.Telefono || ""),
+            Whatsapp: String(a.Whatsapp || ""),
+          })),
+        };
+
         // Actualizar el caché de LocalStorage para futuras consultas rápidas o fallback offline
-        this.saveToLocalCache(data);
-        return data as DatabaseState;
+        this.saveToLocalCache(cleanData);
+        return cleanData;
       } else {
         throw new Error("Formato de respuesta incorrecto desde Google Sheets API");
       }

@@ -12,11 +12,12 @@ interface GuestViewProps {
   cabanas: Cabana[];
   reservas: Reserva[];
   onBackToAdmin: () => void;
+  onBackToWelcome?: () => void;
   isAdminLoggedIn?: boolean;
   complexConfig?: Administracion;
 }
 
-export default function GuestView({ cabanas, reservas, onBackToAdmin, isAdminLoggedIn, complexConfig }: GuestViewProps) {
+export default function GuestView({ cabanas, reservas, onBackToAdmin, onBackToWelcome, isAdminLoggedIn, complexConfig }: GuestViewProps) {
   const whatsappNum = String(complexConfig?.Whatsapp || "5491112345678");
   const telefonoNum = String(complexConfig?.Telefono || "+5491112345678");
 

@@ -17,6 +17,13 @@ interface ServiceContractFormProps {
   onBack: () => void;
 }
 
+const formatMoney = (valStr: string) => {
+  const clean = valStr.replace(/\D/g, "");
+  if (!clean) return "";
+  const num = parseInt(clean, 10);
+  return new Intl.NumberFormat("es-CL").format(num).replace(/,/g, ".");
+};
+
 export default function ServiceContractForm({ clientes, servicios, reservas, cabanas, onSave, onBack }: ServiceContractFormProps) {
   const [reservaId, setReservaId] = useState("");
   const [clienteId, setClienteId] = useState("");
@@ -28,7 +35,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
   const [medioPago, setMedioPago] = useState<"Transferencia" | "Efectivo" | "Tarjeta">("Transferencia");
 
   // Service validation state
-  const selectedServiceObj = servicios.find((s) => s.id === servicioId);
+  const selectedServiceObj = servicios.find((s) => String(s.id) === String(servicioId));
   const isServiceInMaintenance = selectedServiceObj?.estado === "Mantenimiento";
   const isServiceActive = selectedServiceObj ? selectedServiceObj.estado === "Activo" : true;
 
@@ -65,9 +72,9 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
   const handleServicioChange = (val: string) => {
     setServicioId(val);
     if (val) {
-      const srv = servicios.find((s) => s.id === val);
+      const srv = servicios.find((s) => String(s.id) === String(val));
       if (srv) {
-        setPrecioPactado(srv.precio.toString());
+        setPrecioPactado(formatMoney(srv.precio.toString()));
         if (srv.estado !== "Activo") {
           alert(`¡Advertencia! El servicio seleccionado "${srv.nombre}" está en estado "${srv.estado}". Solo se permite guardar contrataciones para servicios en estado "Activo".`);
         }
@@ -80,7 +87,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
   const autoId = `CON-${Math.floor(100 + Math.random() * 900)}`;
 
   // Subtotal calculated dynamically
-  const parsedPrice = Number(precioPactado) || 0;
+  const parsedPrice = Number(precioPactado.replace(/\./g, "")) || 0;
   const parsedQty = Number(cantidad) || 1;
   const calculatedSubtotal = parsedPrice * parsedQty;
 
@@ -232,7 +239,7 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
                   <option value="">Buscar servicio...</option>
                   {servicios.map((s) => (
                     <option key={s.id} value={s.id}>
-                      {s.nombre} – ${s.precio} ({s.tipoCobro})
+                      {s.nombre} – ${new Intl.NumberFormat("es-CL").format(s.precio).replace(/,/g, ".")} ({s.tipoCobro})
                     </option>
                   ))}
                 </select>
@@ -277,17 +284,12 @@ export default function ServiceContractForm({ clientes, servicios, reservas, cab
               <div className="relative">
                 <span className="absolute left-3 top-1/2 -translate-y-1/2 text-neutral-400 font-semibold text-xs">$</span>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
                   required
-                  min="0"
-                  placeholder="0.00"
+                  placeholder="0"
                   value={precioPactado}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    if (val === "" || Number(val) >= 0) {
-                      setPrecioPactado(val);
-                    }
-                  }}
+                  onChange={(e) => setPrecioPactado(formatMoney(e.target.value))}
                   className="w-full pl-6 pr-4 bg-[#121412] text-neutral-100 border border-neutral-700 focus:border-[#b2ceb4] rounded-lg p-3 text-xs outline-none font-bold"
                 />
               </div>
